@@ -1,0 +1,48 @@
+# OS / editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.tmp
+
+# IDE settings
+.idea/
+.vscode/
+*.iml
+
+# Flutter / Dart tool artifacts
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub/
+/build/
+
+# Coverage
+coverage/
+
+# Android
+android/.gradle/
+android/captures/
+android/local.properties
+
+# iOS / macOS CocoaPods
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/ephemeral/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+macos/Pods/
+macos/Flutter/ephemeral/
+
+# Windows / Linux / macOS build artifacts
+linux/flutter/ephemeral/
+windows/flutter/ephemeral/
+macos/Flutter/ephemeral/
+
+# Generated files
+**/generated_plugin_registrant.dart
+
+# Keep these tracked
+!.metadata
+!pubspec.lock
