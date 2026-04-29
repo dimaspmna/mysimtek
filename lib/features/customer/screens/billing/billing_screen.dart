@@ -4,10 +4,10 @@ import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_loading.dart';
 import '../../../../core/widgets/app_error_view.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../models/invoice_model.dart';
 import '../../providers/billing_provider.dart';
 import 'invoice_detail_screen.dart';
-import 'payment_webview_screen.dart';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -45,13 +45,89 @@ class BillingScreen extends StatefulWidget {
   State<BillingScreen> createState() => _BillingScreenState();
 }
 
-class _BillingScreenState extends State<BillingScreen> {
+class _BillingScreenState extends State<BillingScreen>
+    with WidgetsBindingObserver {
+  bool _awaitingPayment = false;
+  // IDs of invoices that were UNPAID before the user went to pay.
+  // The billing API only returns unpaid/overdue — so if one disappears
+  // after reload it means it just got paid.
+  Set<int> _unpaidBeforePayment = {};
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<BillingProvider>().loadActiveBilling();
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _awaitingPayment) {
+      _awaitingPayment = false;
+      _reloadAndCheckPayment();
+    }
+  }
+
+  Future<void> _reloadAndCheckPayment() async {
+    if (!mounted) return;
+    final provider = context.read<BillingProvider>();
+    await provider.loadActiveBilling();
+    if (!mounted) return;
+    // The billing API only returns unpaid/overdue invoices.
+    // If any previously-unpaid ID is now absent → it got paid.
+    final currentUnpaidIds = (provider.activeBilling?.invoices ?? [])
+        .map((inv) => inv.id)
+        .toSet();
+    final anyPaid = _unpaidBeforePayment.any(
+      (id) => !currentUnpaidIds.contains(id),
+    );
+    if (anyPaid) {
+      _showPaidBanner();
+    }
+  }
+
+  void _showPaidBanner() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Tagihan berhasil dibayar! Terima kasih.',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF10B981),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 5),
+      ),
+    );
+  }
+
+  void _onPaymentInitiated() {
+    final provider = context.read<BillingProvider>();
+    // Save IDs of all currently unpaid invoices (the billing API only
+    // returns unpaid/overdue, so every entry in this list is unpaid).
+    _unpaidBeforePayment = (provider.activeBilling?.invoices ?? [])
+        .map((inv) => inv.id)
+        .toSet();
+    _awaitingPayment = true;
   }
 
   @override
@@ -71,6 +147,7 @@ class _BillingScreenState extends State<BillingScreen> {
       ),
       body: _TagihanTab(
         onRefresh: () => context.read<BillingProvider>().loadActiveBilling(),
+        onPaymentInitiated: _onPaymentInitiated,
       ),
     );
   }
@@ -80,7 +157,11 @@ class _BillingScreenState extends State<BillingScreen> {
 
 class _TagihanTab extends StatelessWidget {
   final VoidCallback onRefresh;
-  const _TagihanTab({required this.onRefresh});
+  final VoidCallback onPaymentInitiated;
+  const _TagihanTab({
+    required this.onRefresh,
+    required this.onPaymentInitiated,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -128,7 +209,12 @@ class _TagihanTab extends StatelessWidget {
             children: [
               summaryCard,
               const SizedBox(height: 12),
-              ...invoices.map((inv) => _InvoiceActiveCard(invoice: inv)),
+              ...invoices.map(
+                (inv) => _InvoiceActiveCard(
+                  invoice: inv,
+                  onPaymentInitiated: onPaymentInitiated,
+                ),
+              ),
             ],
           ),
         );
@@ -255,7 +341,8 @@ class _SummaryCard extends StatelessWidget {
 
 class _InvoiceActiveCard extends StatefulWidget {
   final Invoice invoice;
-  const _InvoiceActiveCard({required this.invoice});
+  final VoidCallback? onPaymentInitiated;
+  const _InvoiceActiveCard({required this.invoice, this.onPaymentInitiated});
 
   @override
   State<_InvoiceActiveCard> createState() => _InvoiceActiveCardState();
@@ -407,31 +494,34 @@ class _InvoiceActiveCardState extends State<_InvoiceActiveCard> {
     setState(() => _loadingPay = true);
     final provider = context.read<BillingProvider>();
     final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
 
-    final snap = await provider.getSnapToken(inv.id);
+    final paymentUrl = await provider.getPaymentUrl(inv.id);
     if (!mounted) return;
     setState(() => _loadingPay = false);
 
-    if (snap == null) {
+    if (paymentUrl == null) {
       messenger.showSnackBar(
         const SnackBar(
-          content: Text('Gagal mendapatkan token pembayaran'),
+          content: Text('Gagal mendapatkan link pembayaran'),
           backgroundColor: AppColors.error,
         ),
       );
       return;
     }
 
-    await navigator.push(
-      MaterialPageRoute(
-        builder: (_) =>
-            PaymentWebViewScreen(paymentUrl: snap, invoiceId: inv.id),
-      ),
-    );
-    if (mounted) {
-      provider.loadActiveBilling();
+    final uri = Uri.parse(paymentUrl);
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!mounted) return;
+    if (!launched) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Gagal membuka browser. Coba lagi.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
     }
+    widget.onPaymentInitiated?.call();
   }
 }
 

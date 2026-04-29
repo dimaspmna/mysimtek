@@ -45,9 +45,7 @@ class ApiService {
           .timeout(_timeout);
       return _parse(res);
     } on SocketException {
-      throw ApiException(
-        'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
-      );
+      throw ApiException('Tidak ada koneksi internet. Periksa koneksi Anda.');
     } on TimeoutException {
       throw ApiException('Koneksi timeout. Server tidak merespons.');
     }
@@ -69,9 +67,7 @@ class ApiService {
           .timeout(_timeout);
       return _parse(res);
     } on SocketException {
-      throw ApiException(
-        'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
-      );
+      throw ApiException('Tidak ada koneksi internet. Periksa koneksi Anda.');
     } on TimeoutException {
       throw ApiException('Koneksi timeout. Server tidak merespons.');
     }
@@ -97,12 +93,32 @@ class ApiService {
       final res = await http.Response.fromStream(streamed);
       return _parse(res);
     } on SocketException {
-      throw ApiException(
-        'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
-      );
+      throw ApiException('Tidak ada koneksi internet. Periksa koneksi Anda.');
     } on TimeoutException {
       throw ApiException('Koneksi timeout. Server tidak merespons.');
     }
+  }
+
+  /// Returns true if [password] matches the user's current password.
+  Future<bool> verifyPassword(String password) async {
+    try {
+      await post(ApiConstants.verifyPassword, {'password': password});
+      return true;
+    } on ApiException catch (e) {
+      if (e.statusCode == 422) return false;
+      rethrow;
+    }
+  }
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await post(ApiConstants.changePassword, {
+      'current_password': currentPassword,
+      'new_password': newPassword,
+      'new_password_confirmation': newPassword,
+    });
   }
 
   dynamic _parse(http.Response res) {

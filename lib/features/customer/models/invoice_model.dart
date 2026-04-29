@@ -47,6 +47,22 @@ class Invoice {
   bool get isPending => status.toLowerCase() == 'pending';
   bool get isOverdue => status.toLowerCase() == 'overdue';
 
+  Invoice copyWith({String? status, String? paidAt, String? paymentMethod}) =>
+      Invoice(
+        id: id,
+        invoiceNumber: invoiceNumber,
+        amount: amount,
+        status: status ?? this.status,
+        dueDate: dueDate,
+        createdAt: createdAt,
+        paidAt: paidAt ?? this.paidAt,
+        paymentMethod: paymentMethod ?? this.paymentMethod,
+        items: items,
+        customerName: customerName,
+        packageName: packageName,
+        period: period,
+      );
+
   /// Format period_month (e.g. "2025-01") to "Januari 2025"
   String get formattedPeriod {
     final p = period;

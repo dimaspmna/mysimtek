@@ -4,9 +4,9 @@ import 'package:provider/provider.dart';
 import 'core/constants/app_colors.dart';
 import 'core/constants/app_version.dart';
 import 'core/providers/auth_provider.dart';
+import 'core/widgets/no_internet_overlay.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/customer/screens/customer_shell.dart';
-import 'features/teknisi/screens/teknisi_shell.dart';
 
 class MySimtekApp extends StatelessWidget {
   const MySimtekApp({super.key});
@@ -48,7 +48,7 @@ class MySimtekApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const _SplashRouter(),
+      home: const NoInternetOverlay(child: _SplashRouter()),
     );
   }
 }
@@ -70,9 +70,8 @@ class _SplashRouterState extends State<_SplashRouter> {
   }
 
   Future<void> _init() async {
-    await Future.delayed(const Duration(milliseconds: 600));
-    if (!mounted) return;
     await context.read<AuthProvider>().checkAuth();
+    if (!mounted) return;
     setState(() => _initialized = true);
   }
 
@@ -86,7 +85,6 @@ class _SplashRouterState extends State<_SplashRouter> {
 
     if (auth.isAuthenticated) {
       if (auth.isCustomer) return const CustomerShell();
-      if (auth.isTeknisi) return const TeknisiShell();
       // Role tidak dikenal — logout otomatis supaya tidak stuck
       WidgetsBinding.instance.addPostFrameCallback((_) {
         context.read<AuthProvider>().logout();
@@ -122,7 +120,7 @@ class _SplashRouterState extends State<_SplashRouter> {
             child: Column(
               children: [
                 const Text(
-                  'MySimtek',
+                  'MySimtek - Pelanggan',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: AppColors.textPrimary,

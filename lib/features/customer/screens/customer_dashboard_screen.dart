@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_version.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/widgets/app_loading.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../providers/customer_dashboard_provider.dart';
+import '../providers/notification_provider.dart';
 import '../models/customer_dashboard_model.dart';
+import '../../../core/widgets/app_webview.dart';
 import 'notifications/notification_screen.dart';
 import 'billing/billing_screen.dart';
 import 'billing/payment_history_screen.dart';
@@ -20,12 +23,23 @@ class CustomerDashboardScreen extends StatefulWidget {
 }
 
 class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
+  late final NotificationProvider _notifProv;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       context.read<CustomerDashboardProvider>().load();
+      _notifProv = context.read<NotificationProvider>();
+      _notifProv.startPolling();
     });
+  }
+
+  @override
+  void dispose() {
+    _notifProv.stopPolling();
+    super.dispose();
   }
 
   @override
@@ -41,13 +55,49 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
         title: Image.asset('assets/icon/app_landscape.png', height: 32),
         centerTitle: false,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            color: AppColors.primary,
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const NotificationScreen()),
+          Consumer<NotificationProvider>(
+            builder: (_, notifProv, __) {
+              final unread = notifProv.unreadCount;
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications_outlined),
+                    color: AppColors.primary,
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const NotificationScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  if (unread > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFEF4444),
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          unread > 99 ? '99+' : '$unread',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
               );
             },
           ),
@@ -74,7 +124,7 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
               children: [
                 _HeroCard(dashboard: d),
                 const SizedBox(height: 16),
-                _StatsRow(dashboard: d),
+                const _StatsRow(),
                 const SizedBox(height: 16),
                 const _QuickMenu(),
                 const SizedBox(height: 16),
@@ -82,7 +132,15 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
                   _BannerSection(banners: d.banners),
                   const SizedBox(height: 16),
                 ],
-                const _PaymentInfoCard(),
+                const Center(
+                  child: Text(
+                    '${AppVersion.appName} - v${AppVersion.version}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
               ],
             ),
           );
@@ -340,64 +398,65 @@ class _HeroDetail extends StatelessWidget {
 // ── Stats Row ─────────────────────────────────────────────────────────────────
 
 class _StatsRow extends StatelessWidget {
-  final CustomerDashboard dashboard;
-  const _StatsRow({required this.dashboard});
+  const _StatsRow();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0F172A).withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+    return Selector<CustomerDashboardProvider, (int, int, int)>(
+      selector: (_, p) => (
+        p.dashboard?.unpaidInvoices ?? 0,
+        p.dashboard?.overdueInvoices ?? 0,
+        p.dashboard?.openComplaints ?? 0,
+      ),
+      builder: (_, counts, __) {
+        final (unpaid, overdue, complaints) = counts;
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFF1F5F9)),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF0F172A).withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: IntrinsicHeight(
-        child: Row(
-          children: [
-            Expanded(
-              child: _StatTile(
-                icon: Icons.receipt_long_outlined,
-                count: dashboard.unpaidInvoices,
-                label: 'Belum Lunas',
-                color: const Color(0xFFF97316),
-              ),
+          child: IntrinsicHeight(
+            child: Row(
+              children: [
+                Expanded(
+                  child: _StatTile(
+                    icon: Icons.receipt_long_outlined,
+                    count: unpaid,
+                    label: 'Belum Lunas',
+                    color: const Color(0xFFF97316),
+                  ),
+                ),
+                const VerticalDivider(
+                  width: 1,
+                  thickness: 1,
+                  color: Color(0xFFF1F5F9),
+                ),
+                Expanded(
+                  child: _StatTile(
+                    icon: Icons.schedule_outlined,
+                    count: overdue,
+                    label: 'Jatuh Tempo',
+                    color: const Color(0xFFF97316),
+                  ),
+                ),
+                const VerticalDivider(
+                  width: 1,
+                  thickness: 1,
+                  color: Color(0xFFF1F5F9),
+                ),
+              ],
             ),
-            VerticalDivider(
-              width: 1,
-              thickness: 1,
-              color: const Color(0xFFF1F5F9),
-            ),
-            Expanded(
-              child: _StatTile(
-                icon: Icons.schedule_outlined,
-                count: dashboard.overdueInvoices,
-                label: 'Jatuh Tempo',
-                color: const Color(0xFFF97316),
-              ),
-            ),
-            VerticalDivider(
-              width: 1,
-              thickness: 1,
-              color: const Color(0xFFF1F5F9),
-            ),
-            Expanded(
-              child: _StatTile(
-                icon: Icons.chat_bubble_outline,
-                count: dashboard.openComplaints,
-                label: 'Pengaduan',
-                color: const Color(0xFFF97316),
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -762,118 +821,19 @@ class _QuickMenu extends StatelessWidget {
         _QuickMenuItem(
           icon: Icons.menu_book_rounded,
           label: 'Panduan',
-          onTap: () => _showPanduan(context),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const AppWebView(
+                title: 'Panduan Aplikasi',
+                url: 'https://billing.simtek.co.id',
+              ),
+            ),
+          ),
         ),
       ],
     );
   }
-
-  void _showPanduan(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE2E8F0),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const Text(
-              'Panduan Penggunaan',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1E293B),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ..._panduanItems.map(
-              (item) => Padding(
-                padding: const EdgeInsets.only(bottom: 14),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.10),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(item.$1, color: AppColors.primary, size: 16),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.$2,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF1E293B),
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            item.$3,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF64748B),
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  static const _panduanItems = [
-    (
-      Icons.receipt_long_outlined,
-      'Cek Tagihan',
-      'Lihat dan bayar tagihan internet Anda lewat menu Tagihan.',
-    ),
-    (
-      Icons.history_outlined,
-      'Riwayat Pembayaran',
-      'Pantau semua transaksi pembayaran yang sudah dilakukan.',
-    ),
-    (
-      Icons.headset_mic_outlined,
-      'Lapor Gangguan',
-      'Buat tiket gangguan dan pantau status penanganan teknisi.',
-    ),
-    (
-      Icons.account_circle_outlined,
-      'Profil Akun',
-      'Kelola informasi akun dan keamanan akun Anda.',
-    ),
-  ];
 }
 
 class _QuickMenuItem extends StatelessWidget {
@@ -890,101 +850,54 @@ class _QuickMenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFF1F5F9)),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF0F172A).withOpacity(0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: Colors.white, size: 18),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1E293B),
-                ),
-              ),
-            ],
-          ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFF1F5F9)),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF0F172A).withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-      ),
-    );
-  }
-}
-
-// ── Payment Info Card ─────────────────────────────────────────────────────────
-
-class _PaymentInfoCard extends StatelessWidget {
-  const _PaymentInfoCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF4),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFBBF7D0)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.only(top: 2),
-            child: Icon(Icons.info_outline, color: Color(0xFF22C55E), size: 18),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Informasi Pembayaran',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF15803D),
+        child: Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            splashColor: AppColors.primary.withOpacity(0.08),
+            highlightColor: AppColors.primary.withOpacity(0.04),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon, color: Colors.white, size: 18),
                   ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Pembayaran tagihan internet kini dapat dilakukan langsung '
-                  'via menu Tagihan di aplikasi MySIMTEK. Mendukung berbagai '
-                  'metode pembayaran: transfer bank, dompet digital, QRIS dan '
-                  'sebagainya.',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF16A34A),
-                    height: 1.5,
+                  const SizedBox(height: 8),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1E293B),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }

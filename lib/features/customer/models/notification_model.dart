@@ -2,7 +2,8 @@ class AppNotification {
   final int id;
   final String title;
   final String body;
-  final String type; // 'announcement' | 'finance'
+  final String
+  type; // 'announcement' | 'customer' | 'invoice' | 'ticket_update'
   final String createdAt;
   final bool isRead;
 
@@ -27,7 +28,7 @@ class AppNotification {
         json['message']?.toString() ??
         json['isi']?.toString() ??
         '',
-    type: type,
+    type: json['type']?.toString() ?? type,
     createdAt: json['created_at']?.toString() ?? '',
     isRead: json['is_read'] == true || json['read_at'] != null,
   );

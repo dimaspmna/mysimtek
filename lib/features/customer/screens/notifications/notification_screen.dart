@@ -70,10 +70,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
               padding: const EdgeInsets.all(16),
               children: [
                 const _InvoiceAlerts(),
-                if (prov.announcements.isEmpty)
+                if (prov.all.isEmpty)
                   _EmptyState(hasAlerts: _hasInvoiceAlerts(context))
                 else
-                  _AnnouncementList(items: prov.announcements),
+                  _NotificationList(items: prov.all),
               ],
             ),
           );
@@ -219,18 +219,18 @@ class _AlertCard extends StatelessWidget {
   }
 }
 
-// ── Announcement List ──────────────────────────────────────────────────────
+// ── Notification List ──────────────────────────────────────────────────────
 
-class _AnnouncementList extends StatelessWidget {
+class _NotificationList extends StatelessWidget {
   final List<AppNotification> items;
-  const _AnnouncementList({required this.items});
+  const _NotificationList({required this.items});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         for (int i = 0; i < items.length; i++) ...[
-          _AnnouncementTile(item: items[i]),
+          _NotificationTile(item: items[i]),
           if (i < items.length - 1) const SizedBox(height: 8),
         ],
       ],
@@ -238,32 +238,65 @@ class _AnnouncementList extends StatelessWidget {
   }
 }
 
-class _AnnouncementTile extends StatelessWidget {
+// Keep backward-compatible alias used elsewhere
+// typedef _AnnouncementList = _NotificationList;
+
+class _NotificationTile extends StatelessWidget {
   final AppNotification item;
-  const _AnnouncementTile({required this.item});
+  const _NotificationTile({required this.item});
+
+  bool get _isAnnouncement => item.type == 'announcement';
+
+  IconData get _icon {
+    switch (item.type) {
+      case 'announcement':
+        return Icons.campaign_outlined;
+      case 'paid':
+        return Icons.check_circle_outline;
+      case 'pending':
+        return Icons.hourglass_empty_outlined;
+      case 'overdue':
+        return Icons.warning_amber_outlined;
+      case 'unpaid':
+        return Icons.receipt_long_outlined;
+      case 'ticket_update':
+        return Icons.confirmation_num_outlined;
+      case 'ticket_message':
+        return Icons.message_outlined;
+      case 'complaint_update':
+        return Icons.support_agent_outlined;
+      case 'complaint_reply':
+        return Icons.chat_bubble_outline;
+      default:
+        return Icons.notifications_outlined;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        context.read<NotificationProvider>().markRead(item.id);
+        context.read<NotificationProvider>().markRead(
+          item.id,
+          isAnnouncement: _isAnnouncement,
+        );
         _showDetail(context, item);
       },
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: item.isRead ? Colors.white : const Color(0xFFFFF7ED),
+          color: item.isRead ? Colors.white : AppColors.primary,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: item.isRead
-                ? const Color(0xFFF1F5F9)
-                : AppColors.primary.withOpacity(0.3),
+            color: item.isRead ? const Color(0xFFF1F5F9) : AppColors.primary,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF0F172A).withOpacity(0.04),
+              color: item.isRead
+                  ? const Color(0xFF0F172A).withOpacity(0.04)
+                  : AppColors.primary.withOpacity(0.30),
               blurRadius: 8,
-              offset: const Offset(0, 1),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -276,15 +309,13 @@ class _AnnouncementTile extends StatelessWidget {
               decoration: BoxDecoration(
                 color: item.isRead
                     ? const Color(0xFFF1F5F9)
-                    : AppColors.primary.withOpacity(0.1),
+                    : Colors.white.withOpacity(0.20),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
-                Icons.campaign_outlined,
+                _icon,
                 size: 18,
-                color: item.isRead
-                    ? const Color(0xFF94A3B8)
-                    : AppColors.primary,
+                color: item.isRead ? const Color(0xFF94A3B8) : Colors.white,
               ),
             ),
             const SizedBox(width: 12),
@@ -302,7 +333,9 @@ class _AnnouncementTile extends StatelessWidget {
                             fontWeight: item.isRead
                                 ? FontWeight.w500
                                 : FontWeight.bold,
-                            color: const Color(0xFF1E293B),
+                            color: item.isRead
+                                ? const Color(0xFF1E293B)
+                                : Colors.white,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -313,8 +346,8 @@ class _AnnouncementTile extends StatelessWidget {
                           width: 8,
                           height: 8,
                           margin: const EdgeInsets.only(left: 6),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -325,18 +358,22 @@ class _AnnouncementTile extends StatelessWidget {
                     item.body,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF64748B),
+                      color: item.isRead
+                          ? const Color(0xFF64748B)
+                          : Colors.white.withOpacity(0.85),
                       height: 1.4,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     _formatDate(item.createdAt),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
-                      color: Color(0xFF94A3B8),
+                      color: item.isRead
+                          ? const Color(0xFF94A3B8)
+                          : Colors.white.withOpacity(0.65),
                     ),
                   ),
                 ],
@@ -377,6 +414,52 @@ class _AnnouncementTile extends StatelessWidget {
 class _AnnouncementDetailSheet extends StatelessWidget {
   final AppNotification item;
   const _AnnouncementDetailSheet({required this.item});
+
+  String get _label {
+    switch (item.type) {
+      case 'announcement':
+        return 'PENGUMUMAN';
+      case 'paid':
+        return 'PEMBAYARAN BERHASIL';
+      case 'pending':
+        return 'PEMBAYARAN DIPROSES';
+      case 'overdue':
+        return 'TAGIHAN JATUH TEMPO';
+      case 'unpaid':
+        return 'TAGIHAN BARU';
+      case 'ticket_update':
+        return 'UPDATE TIKET';
+      case 'complaint_update':
+        return 'STATUS PENGADUAN';
+      case 'complaint_reply':
+        return 'BALASAN PENGADUAN';
+      default:
+        return 'NOTIFIKASI';
+    }
+  }
+
+  IconData get _icon {
+    switch (item.type) {
+      case 'announcement':
+        return Icons.campaign_outlined;
+      case 'paid':
+        return Icons.check_circle_outline;
+      case 'pending':
+        return Icons.hourglass_empty_outlined;
+      case 'overdue':
+        return Icons.warning_amber_outlined;
+      case 'unpaid':
+        return Icons.receipt_long_outlined;
+      case 'ticket_update':
+        return Icons.confirmation_num_outlined;
+      case 'complaint_update':
+        return Icons.support_agent_outlined;
+      case 'complaint_reply':
+        return Icons.chat_bubble_outline;
+      default:
+        return Icons.notifications_outlined;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -428,15 +511,11 @@ class _AnnouncementDetailSheet extends StatelessWidget {
                           color: AppColors.primary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Icon(
-                          Icons.campaign_outlined,
-                          size: 16,
-                          color: AppColors.primary,
-                        ),
+                        child: Icon(_icon, size: 16, color: AppColors.primary),
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'PENGUMUMAN',
+                        _label,
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,

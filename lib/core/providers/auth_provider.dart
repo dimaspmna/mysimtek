@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../constants/api_constants.dart';
 import '../models/user_model.dart';
 import '../services/api_service.dart';
+import '../services/fcm_service.dart';
 import '../services/storage_service.dart';
 
 enum AuthStatus { initial, loading, authenticated, unauthenticated }
@@ -19,7 +20,6 @@ class AuthProvider extends ChangeNotifier {
   String? get error => _error;
   bool get isAuthenticated => _status == AuthStatus.authenticated;
   bool get isCustomer => _user?.role == 'customer';
-  bool get isTeknisi => _user?.role == 'teknisi';
 
   AuthProvider(this._api, this._storage);
 
@@ -39,6 +39,8 @@ class AuthProvider extends ChangeNotifier {
           : res as Map<String, dynamic>;
       _user = UserModel.fromJson(userData);
       _status = AuthStatus.authenticated;
+      // Sync FCM token now that the user is authenticated
+      FcmService.syncToken().ignore();
     } catch (_) {
       await _storage.clearAll();
       _status = AuthStatus.unauthenticated;
@@ -58,7 +60,7 @@ class AuthProvider extends ChangeNotifier {
       final token = res['token']?.toString() ?? '';
       final user = UserModel.fromJson(res['user'] as Map<String, dynamic>);
       final role = user.role.toLowerCase().trim();
-      if (role != 'customer' && role != 'teknisi') {
+      if (role != 'customer') {
         _error =
             'Akun ini tidak memiliki akses ke aplikasi. '
             'Hubungi administrator jika ini adalah kesalahan.';
@@ -71,6 +73,8 @@ class AuthProvider extends ChangeNotifier {
       await _storage.saveRole(role);
       _status = AuthStatus.authenticated;
       notifyListeners();
+      // Sync FCM token after successful login
+      FcmService.syncToken().ignore();
       return true;
     } on ApiException catch (e) {
       _error = e.message;
@@ -87,6 +91,8 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> logout() async {
     try {
+      // Clear FCM token on server before revoking session, then delete locally.
+      await FcmService.clearToken();
       await _api.post(ApiConstants.logout, {});
     } catch (_) {}
     await _storage.clearAll();

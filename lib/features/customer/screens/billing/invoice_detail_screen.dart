@@ -4,9 +4,9 @@ import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_loading.dart';
 import '../../../../core/widgets/app_error_view.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/widgets/status_badge.dart';
 import '../../providers/billing_provider.dart';
-import 'payment_webview_screen.dart';
 import 'receipt_screen.dart';
 
 class InvoiceDetailScreen extends StatefulWidget {
@@ -17,13 +17,65 @@ class InvoiceDetailScreen extends StatefulWidget {
   State<InvoiceDetailScreen> createState() => _InvoiceDetailScreenState();
 }
 
-class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
+class _InvoiceDetailScreenState extends State<InvoiceDetailScreen>
+    with WidgetsBindingObserver {
+  bool _awaitingPayment = false;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<BillingProvider>().loadInvoiceDetail(widget.invoiceId);
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _awaitingPayment) {
+      _awaitingPayment = false;
+      _reloadAndCheckPayment();
+    }
+  }
+
+  Future<void> _reloadAndCheckPayment() async {
+    if (!mounted) return;
+    final prov = context.read<BillingProvider>();
+    await prov.loadInvoiceDetail(widget.invoiceId);
+    if (!mounted) return;
+    if (prov.currentInvoice?.isPaid ?? false) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Tagihan berhasil dibayar! Terima kasih.',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
   }
 
   @override
@@ -179,31 +231,34 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
               else
                 ElevatedButton.icon(
                   onPressed: () async {
-                    final snap = await context
-                        .read<BillingProvider>()
-                        .getSnapToken(inv.id);
+                    final prov = context.read<BillingProvider>();
+                    final messenger = ScaffoldMessenger.of(context);
+                    final paymentUrl = await prov.getPaymentUrl(inv.id);
                     if (!context.mounted) return;
-                    if (snap == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
+                    if (paymentUrl == null) {
+                      messenger.showSnackBar(
                         const SnackBar(
-                          content: Text('Gagal mendapatkan token pembayaran'),
+                          content: Text('Gagal mendapatkan link pembayaran'),
                           backgroundColor: AppColors.error,
                         ),
                       );
                       return;
                     }
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => PaymentWebViewScreen(
-                          paymentUrl: snap,
-                          invoiceId: inv.id,
-                        ),
-                      ),
+                    final launched = await launchUrl(
+                      Uri.parse(paymentUrl),
+                      mode: LaunchMode.externalApplication,
                     );
-                    if (context.mounted) {
-                      context.read<BillingProvider>().loadInvoiceDetail(inv.id);
+                    if (!context.mounted) return;
+                    if (!launched) {
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text('Gagal membuka browser. Coba lagi.'),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                      return;
                     }
+                    _awaitingPayment = true;
                   },
                   icon: const Icon(Icons.payment),
                   label: const Text('Bayar Tagihan Ini'),

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "294224939799",
+    "project_id": "mysimtek-pelanggan",
+    "storage_bucket": "mysimtek-pelanggan.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:294224939799:android:7e02d636e5d553488f4552",
+        "android_client_info": {
+          "package_name": "com.example.mysimtek"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD0xuVlMTX5h_HEmaHvCXh7psfohaJkcCQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

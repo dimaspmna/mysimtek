@@ -19,7 +19,7 @@ class BillingProvider extends ChangeNotifier {
   Invoice? _currentInvoice;
   String? _invoiceError;
 
-  String? _paymentStatus;
+  String? _paymentUrlError;
 
   bool get billingLoading => _billingLoading;
   BillingInfo? get activeBilling => _activeBilling;
@@ -33,7 +33,7 @@ class BillingProvider extends ChangeNotifier {
   Invoice? get currentInvoice => _currentInvoice;
   String? get invoiceError => _invoiceError;
 
-  String? get paymentStatus => _paymentStatus;
+  String? get paymentUrlError => _paymentUrlError;
 
   BillingProvider(this._api);
 
@@ -113,43 +113,24 @@ class BillingProvider extends ChangeNotifier {
     }
   }
 
-  /// Returns the Midtrans payment redirect URL, or null on failure.
-  Future<String?> getSnapToken(int invoiceId) async {
+  /// Mengembalikan public payment URL (/pay/{token}) untuk dibuka via WebView.
+  /// URL ini tidak memerlukan login dan langsung memuat halaman pembayaran Midtrans.
+  Future<String?> getPaymentUrl(int invoiceId) async {
+    _paymentUrlError = null;
     try {
-      final res = await _api.post(
-        ApiConstants.customerSnapToken(invoiceId),
-        {},
-      );
+      // ApiService auto-unwraps { status, data } → returns data map directly
+      final res = await _api.get(ApiConstants.customerPaymentUrl(invoiceId));
       if (res is Map) {
-        // Prefer the full redirect_url returned by the API; fall back to
-        // building the production snap URL from the token.
-        final redirectUrl = res['redirect_url']?.toString();
-        if (redirectUrl != null && redirectUrl.isNotEmpty) {
-          return redirectUrl;
-        }
-        final token = res['snap_token']?.toString() ?? res['token']?.toString();
-        if (token != null && token.isNotEmpty) {
-          return 'https://app.midtrans.com/snap/v4/redirection/$token';
-        }
+        final url = res['payment_url']?.toString();
+        if (url != null && url.isNotEmpty) return url;
       }
       return null;
     } catch (e) {
-      _billingError = e is ApiException
+      _paymentUrlError = e is ApiException
           ? e.message
-          : 'Gagal mendapatkan token pembayaran';
+          : 'Gagal mendapatkan link pembayaran';
       notifyListeners();
       return null;
     }
-  }
-
-  Future<void> checkPaymentStatus(int invoiceId) async {
-    try {
-      final res = await _api.get(ApiConstants.customerPaymentStatus(invoiceId));
-      if (res is Map) {
-        _paymentStatus =
-            res['payment_status']?.toString() ?? res['status']?.toString();
-      }
-      notifyListeners();
-    } catch (_) {}
   }
 }
