@@ -42,21 +42,12 @@ class PaymentHistoryScreen extends StatefulWidget {
 }
 
 class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
-  String _filter = '';
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<BillingProvider>().loadHistory();
     });
-  }
-
-  void _applyFilter(String value) {
-    setState(() => _filter = value);
-    context.read<BillingProvider>().loadHistory(
-      status: value.isEmpty ? null : value,
-    );
   }
 
   @override
@@ -80,8 +71,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
           if (prov.historyError != null) {
             return AppErrorView(
               message: prov.historyError!,
-              onRetry: () =>
-                  prov.loadHistory(status: _filter.isEmpty ? null : _filter),
+              onRetry: prov.loadHistory,
             );
           }
 
@@ -99,9 +89,14 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
 
           return RefreshIndicator(
             color: AppColors.primary,
-            onRefresh: () async => _applyFilter(_filter),
+            onRefresh: () async => prov.loadHistory(),
             child: ListView(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                16,
+                16,
+                16 + MediaQuery.of(context).padding.bottom,
+              ),
               children: [
                 // Summary card
                 _SummaryCard(
@@ -109,9 +104,6 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                   lunas: totalLunas,
                   totalBayar: fmt.format(totalBayar),
                 ),
-                const SizedBox(height: 12),
-                // Filter row
-                _HistFilterRow(current: _filter, onChanged: _applyFilter),
                 const SizedBox(height: 12),
                 // List
                 if (history.isEmpty)
@@ -275,66 +267,6 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
-// ── Filter Row ────────────────────────────────────────────────────────────────
-
-class _HistFilterRow extends StatelessWidget {
-  final String current;
-  final ValueChanged<String> onChanged;
-
-  const _HistFilterRow({required this.current, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    const filters = [
-      ('', 'Semua'),
-      ('paid', 'Lunas'),
-      ('overdue', 'Jatuh Tempo'),
-      ('unpaid', 'Belum Bayar'),
-    ];
-    return Row(
-      children: [
-        for (int i = 0; i < filters.length; i++) ...[
-          if (i > 0) const SizedBox(width: 6),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => onChanged(filters[i].$1),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  color: current == filters[i].$1
-                      ? AppColors.primary
-                      : const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(10),
-                  border: current == filters[i].$1
-                      ? null
-                      : Border.all(
-                          color: const Color(
-                            0xFF000000,
-                          ).withValues(alpha: 0.10),
-                          width: 1,
-                        ),
-                ),
-                child: Text(
-                  filters[i].$2,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: current == filters[i].$1
-                        ? Colors.white
-                        : const Color(0xFF64748B),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
 // ── History Tile ──────────────────────────────────────────────────────────────
 
 class _HistTile extends StatelessWidget {
@@ -424,14 +356,9 @@ class _HistTile extends StatelessWidget {
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            Icons.receipt_outlined,
-                            size: 11,
-                            color: Colors.white,
-                          ),
                           SizedBox(width: 4),
                           Text(
-                            'Struk',
+                            'LUNAS',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w500,

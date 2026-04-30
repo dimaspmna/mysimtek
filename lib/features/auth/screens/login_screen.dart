@@ -208,32 +208,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 16),
                 // Bantuan masuk
-                GestureDetector(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const BantuanMasukScreen(),
-                    ),
-                  ),
-                  child: RichText(
-                    text: const TextSpan(
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
-                      children: [
-                        TextSpan(text: 'Lupa kata sandi? '),
-                        TextSpan(
-                          text: 'Bantuan Masuk',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
                 const SizedBox(height: 32),
                 // Footer
                 Column(
@@ -248,7 +222,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 4),
                     const Text(
-                      '2026 © SIMTEK - ALWAYS CONNECTING THE WORLD',
+                      '2026 © SIMTEK - DEVELOPED BY COGLINETECH',
                       style: TextStyle(
                         fontSize: 11,
                         color: AppColors.textSecondary,

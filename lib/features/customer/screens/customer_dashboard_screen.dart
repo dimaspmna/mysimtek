@@ -444,13 +444,21 @@ class _StatsRow extends StatelessWidget {
                     icon: Icons.schedule_outlined,
                     count: overdue,
                     label: 'Jatuh Tempo',
-                    color: const Color(0xFFF97316),
+                    color: const Color(0xFFEF4444),
                   ),
                 ),
                 const VerticalDivider(
                   width: 1,
                   thickness: 1,
                   color: Color(0xFFF1F5F9),
+                ),
+                Expanded(
+                  child: _StatTile(
+                    icon: Icons.build_circle_outlined,
+                    count: complaints,
+                    label: 'Tiket Diproses',
+                    color: const Color(0xFF3B82F6),
+                  ),
                 ),
               ],
             ),
@@ -497,7 +505,7 @@ class _StatTile extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
+                  color: AppColors.textPrimary,
                   height: 1,
                 ),
               ),
@@ -506,7 +514,11 @@ class _StatTile extends StatelessWidget {
           const SizedBox(height: 5),
           Text(
             label,
-            style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
+            style: const TextStyle(
+              fontSize: 10,
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
@@ -826,7 +838,7 @@ class _QuickMenu extends StatelessWidget {
             MaterialPageRoute(
               builder: (_) => const AppWebView(
                 title: 'Panduan Aplikasi',
-                url: 'https://billing.simtek.co.id',
+                url: 'https://billing.simtek.co.id/guide',
               ),
             ),
           ),

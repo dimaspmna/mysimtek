@@ -33,13 +33,13 @@ class StatusBadge extends StatelessWidget {
   String get _label {
     const map = {
       'aktif': 'Aktif',
-      'suspend': 'Suspend',
-      'pending': 'Pending',
+      'suspend': 'Ditangguhkan',
+      'pending': 'Menunggu',
       'paid': 'Lunas',
       'lunas': 'Lunas',
       'overdue': 'Jatuh Tempo',
-      'open': 'Open',
-      'closed': 'Closed',
+      'open': 'Terbuka',
+      'closed': 'Selesai',
       'selesai': 'Selesai',
       'proses': 'Dalam Proses',
       'in_progress': 'Dalam Proses',

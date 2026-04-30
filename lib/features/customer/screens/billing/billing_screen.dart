@@ -453,16 +453,11 @@ class _InvoiceActiveCardState extends State<_InvoiceActiveCard> {
                             ),
                             decoration: BoxDecoration(
                               color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(
-                                  Icons.credit_card_outlined,
-                                  size: 14,
-                                  color: Colors.white,
-                                ),
                                 const SizedBox(width: 5),
                                 Text(
                                   _loadingPay

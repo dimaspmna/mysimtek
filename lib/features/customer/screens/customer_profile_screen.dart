@@ -8,6 +8,7 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../core/widgets/app_loading.dart';
 import '../../../core/widgets/app_webview.dart';
 import 'change_password_screen.dart';
+import 'detail_akun_screen.dart';
 
 class CustomerProfileScreen extends StatelessWidget {
   const CustomerProfileScreen({super.key});
@@ -41,71 +42,6 @@ class CustomerProfileScreen extends StatelessWidget {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                // Avatar section
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.cardBorder),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColors.primary,
-                              AppColors.primary.withOpacity(0.8),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            user.name.isNotEmpty
-                                ? user.name[0].toUpperCase()
-                                : 'U',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            user.name,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const Text(
-                            'Pelanggan',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
                 const Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -118,42 +54,90 @@ class CustomerProfileScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Card(
-                  elevation: 0,
-                  margin: EdgeInsets.zero,
-                  shape: RoundedRectangleBorder(
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    side: const BorderSide(color: AppColors.cardBorder),
+                    border: Border.all(color: AppColors.cardBorder),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(0),
-                    child: Column(
-                      children: [
-                        _infoTile(
-                          Icons.email_outlined,
-                          'Email',
-                          user.email,
-                          bgColor: const Color(0xFF5C6BC0),
+                  child: Material(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    clipBehavior: Clip.antiAlias,
+                    child: InkWell(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const DetailAkunScreen(),
                         ),
-                        if (user.phone != null) ...[
-                          _divider(),
-                          _infoTile(
-                            Icons.phone_outlined,
-                            'No HP',
-                            user.phone!,
-                            bgColor: const Color(0xFF43A047),
-                          ),
-                        ],
-                        if (user.customerNumber != null) ...[
-                          _divider(),
-                          _infoTile(
-                            Icons.badge_outlined,
-                            '',
-                            user.customerNumber!,
-                            bgColor: const Color(0xFFFF8F00),
-                          ),
-                        ],
-                      ],
+                      ),
+                      splashColor: AppColors.primary.withOpacity(0.06),
+                      highlightColor: AppColors.primary.withOpacity(0.03),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.primary,
+                                    AppColors.primary.withOpacity(0.8),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  user.name.isNotEmpty
+                                      ? user.name[0].toUpperCase()
+                                      : 'U',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    user.name,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  const Text(
+                                    'Pelanggan',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.chevron_right,
+                              color: AppColors.textSecondary,
+                              size: 20,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -240,9 +224,6 @@ class CustomerProfileScreen extends StatelessWidget {
                             WhatsappAdmin.support,
                             'Halo admin support, saya ${user.name} ingin melaporkan kendala jaringan/gangguan.\n\n[pesan ini dari Aplikasi MySimtek - Pelanggan]',
                           ),
-                          borderRadius: const BorderRadius.vertical(
-                            bottom: Radius.circular(12),
-                          ),
                           splashColor: AppColors.textSecondary.withOpacity(
                             0.08,
                           ),
@@ -272,6 +253,57 @@ class CustomerProfileScreen extends StatelessWidget {
                                 const Expanded(
                                   child: Text(
                                     'Admin Support 24 Jam',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.chevron_right,
+                                  color: AppColors.textSecondary,
+                                  size: 20,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const Divider(height: 1, color: AppColors.cardBorder),
+                        InkWell(
+                          onTap: () => _showKontakLainnya(context, user.name),
+                          borderRadius: const BorderRadius.vertical(
+                            bottom: Radius.circular(12),
+                          ),
+                          splashColor: AppColors.textSecondary.withOpacity(
+                            0.08,
+                          ),
+                          highlightColor: AppColors.textSecondary.withOpacity(
+                            0.04,
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF4511E),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(
+                                    Icons.contacts_outlined,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                const Expanded(
+                                  child: Text(
+                                    'Informasi Lainnya',
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
@@ -346,17 +378,32 @@ class CustomerProfileScreen extends StatelessWidget {
                         ),
                         const Divider(height: 1, color: AppColors.cardBorder),
                         _menuTile(
-                          icon: Icons.system_security_update_outlined,
-                          label: 'Update Aplikasi',
-                          bgColor: const Color(0xFF039BE5),
-                          onTap: () => launchUrl(
-                            Uri.parse(
-                              'https://play.google.com/store/apps/details?id=com.example.mysimtek',
+                          icon: Icons.language,
+                          label: 'Website Resmi',
+                          bgColor: const Color(0xFF00ACC1),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AppWebView(
+                                title: 'Website Resmi',
+                                url: 'https://simtek.co.id',
+                              ),
                             ),
-                            mode: LaunchMode.externalApplication,
                           ),
-                          isLast: true,
                         ),
+                        // const Divider(height: 1, color: AppColors.cardBorder),
+                        // _menuTile(
+                        //   icon: Icons.system_security_update_outlined,
+                        //   label: 'Update Aplikasi',
+                        //   bgColor: const Color(0xFF039BE5),
+                        //   onTap: () => launchUrl(
+                        //     Uri.parse(
+                        //       'https://play.google.com/store/apps/details?id=com.example.mysimtek',
+                        //     ),
+                        //     mode: LaunchMode.externalApplication,
+                        //   ),
+                        //   isLast: true,
+                        // ),
                       ],
                     ),
                   ),
@@ -480,7 +527,7 @@ class CustomerProfileScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     const Text(
-                      '2026 © SIMTEK - ALWAYS CONNECTING THE WORLD',
+                      '${AppVersion.copyright}',
                       style: TextStyle(
                         fontSize: 11,
                         color: AppColors.textSecondary,
@@ -524,6 +571,207 @@ class CustomerProfileScreen extends StatelessWidget {
                 const SizedBox(height: 16),
               ],
             ),
+    );
+  }
+
+  void _showKontakLainnya(BuildContext context, String userName) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (_, controller) => Padding(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+          child: ListView(
+            controller: controller,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFC8C8C8),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Informasi Lainnya',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'TELEPON',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _kontakTile(
+                icon: Icons.phone_outlined,
+                bgColor: const Color(0xFF43A047),
+                title: 'Admin Pembayaran',
+                subtitle: '+62 821-1185-6200',
+                onTap: () => launchUrl(
+                  Uri.parse('tel:+6282111856200'),
+                  mode: LaunchMode.externalApplication,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _kontakTile(
+                icon: Icons.phone_outlined,
+                bgColor: const Color(0xFF1E88E5),
+                title: 'Admin Support 24 Jam',
+                subtitle: '+62 821-2337-6300',
+                onTap: () => launchUrl(
+                  Uri.parse('tel:+6282123376300'),
+                  mode: LaunchMode.externalApplication,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'EMAIL',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _kontakTile(
+                icon: Icons.email_outlined,
+                bgColor: const Color(0xFFFF8F00),
+                title: 'Finance',
+                subtitle: 'finance@simtek.co.id',
+                onTap: () => launchUrl(
+                  Uri.parse('mailto:finance@simtek.co.id'),
+                  mode: LaunchMode.externalApplication,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _kontakTile(
+                icon: Icons.email_outlined,
+                bgColor: const Color(0xFF5C6BC0),
+                title: 'Developer',
+                subtitle: 'developer@simtek.co.id',
+                onTap: () => launchUrl(
+                  Uri.parse('mailto:developer@simtek.co.id'),
+                  mode: LaunchMode.externalApplication,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _kontakTile(
+                icon: Icons.email_outlined,
+                bgColor: const Color(0xFF00897B),
+                title: 'Info Perusahaan',
+                subtitle: 'info@simtek.co.id',
+                onTap: () => launchUrl(
+                  Uri.parse('mailto:info@simtek.co.id'),
+                  mode: LaunchMode.externalApplication,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'LOKASI',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _kontakTile(
+                icon: Icons.location_on_outlined,
+                bgColor: const Color(0xFFE53935),
+                title: 'Lokasi Kantor',
+                subtitle:
+                    'Gusti Building, Gusti Business District, Dusun Simpar RT.064 RW.028 Panjalu, Kabupaten Ciamis, Jawa Barat 46264',
+                onTap: () => launchUrl(
+                  Uri.parse('https://share.google/968taUUFWquiZyRyj'),
+                  mode: LaunchMode.externalApplication,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _kontakTile({
+    required IconData icon,
+    required Color bgColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.cardBorder),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: Colors.white, size: 16),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.open_in_new,
+              color: AppColors.textSecondary,
+              size: 16,
+            ),
+          ],
+        ),
+      ),
     );
   }
 

@@ -89,6 +89,20 @@ class TicketProvider extends ChangeNotifier {
     }
   }
 
+  /// Reload detail tanpa menampilkan loading indicator (untuk polling).
+  Future<void> refreshTicketDetail(int id) async {
+    try {
+      final res = await _api.get(ApiConstants.customerTicketDetail(id));
+      final data = (res is Map && res.containsKey('ticket'))
+          ? res['ticket'] as Map<String, dynamic>
+          : res as Map<String, dynamic>;
+      _currentTicket = Ticket.fromJson(data);
+      notifyListeners();
+    } on ApiException {
+      // abaikan error saat polling background
+    }
+  }
+
   Future<bool> replyTicket(int ticketId, String message) async {
     _submitting = true;
     notifyListeners();

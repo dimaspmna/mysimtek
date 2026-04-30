@@ -216,10 +216,9 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen>
                       builder: (_) => ReceiptScreen(invoice: inv),
                     ),
                   ),
-                  icon: const Icon(Icons.receipt),
-                  label: const Text('Lihat Struk / Bukti Bayar'),
+                  label: const Text('Lihat Bukti Bayar'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.success,
+                    backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     minimumSize: const Size(double.infinity, 50),
                     shape: RoundedRectangleBorder(
@@ -260,7 +259,6 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen>
                     }
                     _awaitingPayment = true;
                   },
-                  icon: const Icon(Icons.payment),
                   label: const Text('Bayar Tagihan Ini'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,

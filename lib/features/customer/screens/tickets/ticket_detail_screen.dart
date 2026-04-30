@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -18,6 +20,8 @@ class TicketDetailScreen extends StatefulWidget {
 class _TicketDetailScreenState extends State<TicketDetailScreen> {
   final _replyCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
+  Timer? _pollTimer;
+  int _lastMessageCount = 0;
 
   @override
   void initState() {
@@ -25,10 +29,17 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<TicketProvider>().loadTicketDetail(widget.ticketId);
     });
+    _pollTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      final prov = context.read<TicketProvider>();
+      if (!prov.detailLoading && !prov.submitting) {
+        prov.refreshTicketDetail(widget.ticketId);
+      }
+    });
   }
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
     _replyCtrl.dispose();
     _scrollCtrl.dispose();
     super.dispose();
@@ -73,63 +84,111 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
           final ticket = prov.currentTicket;
           if (ticket == null) return const AppLoading();
 
-          _scrollToBottom();
+          // Auto-scroll hanya ketika ada pesan baru masuk
+          final msgCount = ticket.messages.length;
+          if (msgCount > _lastMessageCount) {
+            _lastMessageCount = msgCount;
+            _scrollToBottom();
+          }
 
           return Column(
             children: [
-              // Ticket info header
+              // Ticket info header + progress tracking (fixed, tidak scroll)
               Container(
                 color: Colors.white,
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          if (ticket.ticketNumber.isNotEmpty)
-                            Text(
-                              ticket.ticketNumber,
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textSecondary,
-                                fontFamily: 'monospace',
-                              ),
-                            ),
-                          Text(
-                            ticket.subject,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (ticket.ticketNumber.isNotEmpty)
+                                  RichText(
+                                    text: TextSpan(
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                      children: [
+                                        const TextSpan(text: 'No. Tiket: '),
+                                        TextSpan(
+                                          text: ticket.ticketNumber,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                const SizedBox(height: 2),
+                                RichText(
+                                  text: TextSpan(
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                    children: [
+                                      const TextSpan(
+                                        text: 'Masalah: ',
+                                        style: TextStyle(
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      ),
+                                      TextSpan(
+                                        text: ticket.subject,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                RichText(
+                                  text: TextSpan(
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                    children: [
+                                      const TextSpan(text: 'Dibuat: '),
+                                      TextSpan(
+                                        text: ticket.createdAt.split('T').first,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Dibuat: ${ticket.createdAt.split('T').first}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
+                          StatusBadge(ticket.status),
                         ],
                       ),
                     ),
-                    StatusBadge(ticket.status),
+                    const Divider(height: 1, color: AppColors.divider),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                      child: _ProgressTracking(ticket: ticket),
+                    ),
                   ],
                 ),
               ),
               const Divider(height: 1, color: AppColors.divider),
-              // Progress tracking + technician info + messages
+              // Technician info + messages
               Expanded(
                 child: ListView(
                   controller: _scrollCtrl,
                   padding: const EdgeInsets.all(16),
                   children: [
-                    // Progress tracking
-                    _ProgressTracking(ticket: ticket),
-                    const SizedBox(height: 12),
                     // Technician info
                     if (ticket.hasAssignedTechnician &&
                         ticket.technicianName != null) ...[
@@ -223,7 +282,7 @@ class _ProgressTracking extends StatelessWidget {
     final steps = [
       (label: 'Diterima', done: true),
       (
-        label: 'Diproses',
+        label: 'Proses',
         done: ['in_progress', 'resolved', 'closed'].contains(status),
       ),
       (label: 'Teknisi', done: hasAssigned),
@@ -236,89 +295,83 @@ class _ProgressTracking extends StatelessWidget {
           'fixed',
         ].contains(fieldStatus),
       ),
-      (label: 'Teratasi', done: ['resolved', 'closed'].contains(status)),
+      (label: 'Selesai', done: ['resolved', 'closed'].contains(status)),
     ];
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.cardBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Progress Penanganan',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Progress Penanganan',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              for (int i = 0; i < steps.length; i++) ...[
-                Expanded(
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: steps[i].done
-                              ? AppColors.primary
-                              : const Color(0xFFF1F5F9),
-                          shape: BoxShape.circle,
-                        ),
-                        child: steps[i].done
-                            ? const Icon(
-                                Icons.check,
-                                size: 13,
-                                color: Colors.white,
-                              )
-                            : const Center(
-                                child: SizedBox(
-                                  width: 8,
-                                  height: 8,
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      color: Color(0xFFCBD5E1),
-                                      shape: BoxShape.circle,
-                                    ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            for (int i = 0; i < steps.length; i++) ...[
+              Expanded(
+                flex: 3,
+                child: Column(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: steps[i].done
+                            ? AppColors.primary
+                            : const Color(0xFFF1F5F9),
+                        shape: BoxShape.circle,
+                      ),
+                      child: steps[i].done
+                          ? const Icon(
+                              Icons.check,
+                              size: 13,
+                              color: Colors.white,
+                            )
+                          : const Center(
+                              child: SizedBox(
+                                width: 8,
+                                height: 8,
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color: Color(0xFFCBD5E1),
+                                    shape: BoxShape.circle,
                                   ),
                                 ),
                               ),
+                            ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      steps[i].label,
+                      style: const TextStyle(
+                        fontSize: 9,
+                        color: AppColors.textSecondary,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        steps[i].label,
-                        style: const TextStyle(
-                          fontSize: 9,
-                          color: AppColors.textSecondary,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+              if (i < steps.length - 1)
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    height: 2,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    color: (steps[i].done && steps[i + 1].done)
+                        ? AppColors.primary.withOpacity(0.4)
+                        : const Color(0xFFF1F5F9),
                   ),
                 ),
-                if (i < steps.length - 1)
-                  Expanded(
-                    child: Container(
-                      height: 2,
-                      margin: const EdgeInsets.only(bottom: 16),
-                      color: (steps[i].done && steps[i + 1].done)
-                          ? AppColors.primary.withOpacity(0.4)
-                          : const Color(0xFFF1F5F9),
-                    ),
-                  ),
-              ],
             ],
-          ),
-        ],
-      ),
+          ],
+        ),
+      ],
     );
   }
 }

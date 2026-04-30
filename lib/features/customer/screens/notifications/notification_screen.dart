@@ -128,7 +128,7 @@ class _InvoiceAlerts extends StatelessWidget {
           subtitle:
               'Anda memiliki ${dash.unpaidInvoices} tagihan yang belum dibayar.',
           titleColor: const Color(0xFFC2410C),
-          subtitleColor: const Color(0xFFF97316),
+          subtitleColor: const Color(0xFFEA580C),
         ),
       );
     }
