@@ -70,6 +70,9 @@ flutter pub get
 
 # Build bundle untuk rilis
 flutter build appbundle --release
+
+# Build apk untuk rilis
+flutter build apk --release
 ```
 
 Jika Anda ingin melakukan **obfuscation** (agar kode aplikasi tidak mudah dibaca/di-decompile orang lain), gunakan perintah ini:

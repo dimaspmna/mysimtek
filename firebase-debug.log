@@ -1,0 +1,25 @@
+[debug] [2026-05-01T01:47:41.963Z] ----------------------------------------------------------------------
+[debug] [2026-05-01T01:47:41.965Z] Command:       /usr/local/bin/firebase /home/dimas/.cache/firebase/tools/lib/node_modules/firebase-tools/lib/bin/firebase apps:create ios mysimtek (ios) --bundle-id=com.example.mysimtek --json --project=mysimtek-pelanggan
+[debug] [2026-05-01T01:47:41.965Z] CLI Version:   15.15.0
+[debug] [2026-05-01T01:47:41.965Z] Platform:      linux
+[debug] [2026-05-01T01:47:41.966Z] Node Version:  v20.18.2
+[debug] [2026-05-01T01:47:41.966Z] Time:          Fri May 01 2026 08:47:41 GMT+0700 (Western Indonesia Time)
+[debug] [2026-05-01T01:47:41.966Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-05-01T01:47:42.225Z] Object "" in "firebase.json" has unknown property: {"additionalProperty":"flutter"}
+[debug] [2026-05-01T01:47:42.228Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-05-01T01:47:42.229Z] > authorizing via signed-in user (coglinetech@gmail.com)
+[info] Create your IOS app in project mysimtek-pelanggan:
+[debug] [2026-05-01T01:47:42.232Z] Checked if tokens are valid: true, expires at: 1777603636844
+[debug] [2026-05-01T01:47:42.232Z] Checked if tokens are valid: true, expires at: 1777603636844
+[debug] [2026-05-01T01:47:42.234Z] >>> [apiv2][query] POST https://firebase.googleapis.com/v1beta1/projects/mysimtek-pelanggan/iosApps [none]
+[debug] [2026-05-01T01:47:42.234Z] >>> [apiv2][body] POST https://firebase.googleapis.com/v1beta1/projects/mysimtek-pelanggan/iosApps {"displayName":"mysimtek (ios)","bundleId":"com.example.mysimtek"}
+[debug] [2026-05-01T01:47:43.061Z] <<< [apiv2][status] POST https://firebase.googleapis.com/v1beta1/projects/mysimtek-pelanggan/iosApps 409
+[debug] [2026-05-01T01:47:43.062Z] <<< [apiv2][body] POST https://firebase.googleapis.com/v1beta1/projects/mysimtek-pelanggan/iosApps {"error":{"code":409,"message":"Requested entity already exists","status":"ALREADY_EXISTS"}}
+[debug] [2026-05-01T01:47:43.064Z] Request to https://firebase.googleapis.com/v1beta1/projects/mysimtek-pelanggan/iosApps had HTTP Error: 409, Requested entity already exists
+[debug] [2026-05-01T01:47:43.146Z] FirebaseError: Request to https://firebase.googleapis.com/v1beta1/projects/mysimtek-pelanggan/iosApps had HTTP Error: 409, Requested entity already exists
+    at responseToError (/home/dimas/.cache/firebase/tools/lib/node_modules/firebase-tools/lib/responseToError.js:53:12)
+    at RetryOperation._fn (/home/dimas/.cache/firebase/tools/lib/node_modules/firebase-tools/lib/apiv2.js:333:77)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[error] 
+[error] Error: Failed to create iOS app for project mysimtek-pelanggan. See firebase-debug.log for more info.

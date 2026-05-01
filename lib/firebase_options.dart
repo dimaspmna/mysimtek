@@ -2,37 +2,13 @@
 // ignore_for_file: type=lint
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, kIsWeb, TargetPlatform;
+    show defaultTargetPlatform, TargetPlatform;
 
-/// Default [FirebaseOptions] for use with your Firebase apps.
-///
-/// Example:
-/// ```dart
-/// import 'firebase_options.dart';
-/// // ...
-/// await Firebase.initializeApp(
-///   options: DefaultFirebaseOptions.currentPlatform,
-/// );
-/// ```
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
-    if (kIsWeb) {
-      return web;
-    }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
-      case TargetPlatform.iOS:
-        return ios;
-      case TargetPlatform.macOS:
-        return macos;
-      case TargetPlatform.windows:
-        return windows;
-      case TargetPlatform.linux:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for linux - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
       default:
         throw UnsupportedError(
           'DefaultFirebaseOptions are not supported for this platform.',
@@ -40,49 +16,11 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBjoyagsyZCEpJVNT50SARxTfhRUbUyFsc',
-    appId: '1:294224939799:web:60ce1537e04b6ae08f4552',
-    messagingSenderId: '294224939799',
-    projectId: 'mysimtek-pelanggan',
-    authDomain: 'mysimtek-pelanggan.firebaseapp.com',
-    storageBucket: 'mysimtek-pelanggan.firebasestorage.app',
-    measurementId: 'G-0J26D6HC7P',
-  );
-
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyD0xuVlMTX5h_HEmaHvCXh7psfohaJkcCQ',
-    appId: '1:294224939799:android:7e02d636e5d553488f4552',
+    appId: '1:294224939799:android:f6978b1164d5c78d8f4552',
     messagingSenderId: '294224939799',
     projectId: 'mysimtek-pelanggan',
     storageBucket: 'mysimtek-pelanggan.firebasestorage.app',
-  );
-
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyB67MSvB2Bp9X-SVEsJyltlCFkt1pf-XK0',
-    appId: '1:294224939799:ios:cb5cdabf57e3e0058f4552',
-    messagingSenderId: '294224939799',
-    projectId: 'mysimtek-pelanggan',
-    storageBucket: 'mysimtek-pelanggan.firebasestorage.app',
-    iosBundleId: 'com.example.mysimtek',
-  );
-
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyB67MSvB2Bp9X-SVEsJyltlCFkt1pf-XK0',
-    appId: '1:294224939799:ios:cb5cdabf57e3e0058f4552',
-    messagingSenderId: '294224939799',
-    projectId: 'mysimtek-pelanggan',
-    storageBucket: 'mysimtek-pelanggan.firebasestorage.app',
-    iosBundleId: 'com.example.mysimtek',
-  );
-
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyBjoyagsyZCEpJVNT50SARxTfhRUbUyFsc',
-    appId: '1:294224939799:web:5275ddea983e6ef68f4552',
-    messagingSenderId: '294224939799',
-    projectId: 'mysimtek-pelanggan',
-    authDomain: 'mysimtek-pelanggan.firebaseapp.com',
-    storageBucket: 'mysimtek-pelanggan.firebasestorage.app',
-    measurementId: 'G-K4X0KH2DGS',
   );
 }

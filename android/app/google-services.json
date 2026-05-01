@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:294224939799:android:7e02d636e5d553488f4552",
+        "mobilesdk_app_id": "1:294224939799:android:f6978b1164d5c78d8f4552",
         "android_client_info": {
-          "package_name": "com.example.mysimtek"
+          "package_name": "com.mysimtek.pelanggan"
         }
       },
       "oauth_client": [],

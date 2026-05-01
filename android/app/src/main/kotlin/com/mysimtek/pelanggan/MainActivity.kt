@@ -1,4 +1,4 @@
-package com.example.mysimtek
+package com.mysimtek.pelanggan
 
 import io.flutter.embedding.android.FlutterActivity
 
