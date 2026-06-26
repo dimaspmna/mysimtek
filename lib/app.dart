@@ -2,19 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'core/constants/app_colors.dart';
-import 'core/constants/app_version.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/widgets/no_internet_overlay.dart';
 import 'features/auth/screens/login_screen.dart';
+import 'features/auth/screens/splash_screen.dart';
 import 'features/customer/screens/customer_shell.dart';
 
-class MySimtekApp extends StatelessWidget {
-  const MySimtekApp({super.key});
+class OfaApp extends StatelessWidget {
+  const OfaApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'MySimtek',
+      title: 'OFA',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
@@ -70,6 +70,7 @@ class _SplashRouterState extends State<_SplashRouter> {
   }
 
   Future<void> _init() async {
+    await Future.delayed(const Duration(seconds: 1));
     await context.read<AuthProvider>().checkAuth();
     if (!mounted) return;
     setState(() => _initialized = true);
@@ -78,7 +79,7 @@ class _SplashRouterState extends State<_SplashRouter> {
   @override
   Widget build(BuildContext context) {
     if (!_initialized) {
-      return _buildSplash();
+      return const SplashScreen();
     }
 
     final auth = context.watch<AuthProvider>();
@@ -95,56 +96,5 @@ class _SplashRouterState extends State<_SplashRouter> {
     return const LoginScreen();
   }
 
-  Widget _buildSplash() {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          Center(
-            child: Container(
-              width: 100,
-              height: 100,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Image.asset(
-                  'assets/icon/app_icon_large.png',
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 40,
-            left: 0,
-            right: 0,
-            child: Column(
-              children: [
-                const Text(
-                  'MySimtek - Pelanggan',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  '${AppVersion.appName} - VERSI ${AppVersion.version}',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                    letterSpacing: 0.5,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 }

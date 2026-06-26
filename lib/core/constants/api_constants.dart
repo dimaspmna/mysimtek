@@ -42,6 +42,7 @@ class ApiConstants {
   static String customerTicketDetail(dynamic id) => '/customer/tickets/$id';
   static String customerTicketMessages(dynamic id) =>
       '/customer/tickets/$id/messages';
+  static const String customerTicketCategories = '/customer/ticket-categories';
   static const String customerComplaints = '/customer/complaints';
   static String customerComplaintDetail(dynamic id) =>
       '/customer/complaints/$id';

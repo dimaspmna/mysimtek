@@ -6,32 +6,45 @@ import '../../../../core/widgets/app_loading.dart';
 import '../../../../core/widgets/app_error_view.dart';
 import '../../models/invoice_model.dart';
 import '../../providers/billing_provider.dart';
-import 'invoice_detail_screen.dart';
 import 'receipt_screen.dart';
-
-Color _histStatusColor(String status) {
-  switch (status.toLowerCase()) {
-    case 'paid':
-    case 'lunas':
-      return const Color(0xFF10B981);
-    case 'overdue':
-      return const Color(0xFFEF4444);
-    case 'unpaid':
-      return const Color(0xFFF97316);
-    default:
-      return const Color(0xFF94A3B8);
-  }
-}
 
 String _histStatusLabel(String status) {
   const map = {
     'paid': 'Lunas',
     'lunas': 'Lunas',
-    'overdue': 'Jatuh Tempo',
+    'overdue': 'Terlambat',
     'unpaid': 'Belum Bayar',
     'pending': 'Pending',
   };
   return map[status.toLowerCase()] ?? status;
+}
+
+Color _statusBg(String status) {
+  switch (status.toLowerCase()) {
+    case 'paid':
+    case 'lunas':
+      return const Color(0xFFD1FAE5);
+    case 'overdue':
+      return const Color(0xFFFEE2E2);
+    case 'unpaid':
+      return const Color(0xFFFEF3C7);
+    default:
+      return const Color(0xFFF1F5F9);
+  }
+}
+
+Color _statusText(String status) {
+  switch (status.toLowerCase()) {
+    case 'paid':
+    case 'lunas':
+      return const Color(0xFF065F46);
+    case 'overdue':
+      return const Color(0xFF991B1B);
+    case 'unpaid':
+      return const Color(0xFF92400E);
+    default:
+      return const Color(0xFF475569);
+  }
 }
 
 class PaymentHistoryScreen extends StatefulWidget {
@@ -53,7 +66,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: const Text(
           'Riwayat Pembayaran',
@@ -82,11 +95,6 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
             decimalDigits: 0,
           );
 
-          final totalLunas = history.where((inv) => inv.isPaid).length;
-          final totalBayar = history
-              .where((inv) => !inv.isPaid)
-              .fold<double>(0, (s, inv) => s + inv.amount);
-
           return RefreshIndicator(
             color: AppColors.primary,
             onRefresh: () async => prov.loadHistory(),
@@ -98,51 +106,15 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                 16 + MediaQuery.of(context).padding.bottom,
               ),
               children: [
-                // Summary card
-                _SummaryCard(
-                  total: history.length,
-                  lunas: totalLunas,
-                  totalBayar: fmt.format(totalBayar),
-                ),
-                const SizedBox(height: 12),
-                // List
+                _SummaryCard(history: history, fmt: fmt),
+                const SizedBox(height: 16),
                 if (history.isEmpty)
                   _buildEmpty()
                 else
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF0F172A).withOpacity(0.04),
-                          blurRadius: 8,
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Column(
-                        children: List.generate(history.length, (i) {
-                          final isLast = i == history.length - 1;
-                          return Column(
-                            children: [
-                              _HistTile(invoice: history[i], fmt: fmt),
-                              if (!isLast)
-                                const Divider(
-                                  height: 1,
-                                  thickness: 1,
-                                  color: Color(0xFFF8FAFC),
-                                  indent: 16,
-                                  endIndent: 16,
-                                ),
-                            ],
-                          );
-                        }),
-                      ),
-                    ),
-                  ),
+                  ...history.map((inv) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _HistTile(invoice: inv, fmt: fmt),
+                  )),
               ],
             ),
           );
@@ -159,8 +131,8 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
           Container(
             width: 52,
             height: 52,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF1F5F9),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -180,36 +152,21 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
   }
 }
 
-// ── Summary Card ──────────────────────────────────────────────────────────────
-
 class _SummaryCard extends StatelessWidget {
-  final int total;
-  final int lunas;
-  final String totalBayar;
+  final List<Invoice> history;
+  final NumberFormat fmt;
 
-  const _SummaryCard({
-    required this.total,
-    required this.lunas,
-    required this.totalBayar,
-  });
+  const _SummaryCard({required this.history, required this.fmt});
 
   @override
   Widget build(BuildContext context) {
+    final totalLunas = history.where((inv) => inv.isPaid).length;
+    final totalUnpaid = history.where((inv) => !inv.isPaid).length;
     return Container(
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFF97316), Color(0xFFEA580C)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFEA580C).withOpacity(0.25),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       padding: const EdgeInsets.all(18),
       child: Row(
@@ -219,45 +176,35 @@ class _SummaryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'TOTAL PEMBAYARAN',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white.withOpacity(0.7),
-                    letterSpacing: 0.8,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  totalBayar,
+                  '$totalLunas Lunas',
                   style: const TextStyle(
-                    fontSize: 20,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    height: 1.2,
+                    color: Color(0xFF0F172A),
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '$lunas dari $total tagihan lunas',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.white.withOpacity(0.75),
+                  '$totalUnpaid Belum dibayar',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF64748B),
                   ),
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 14),
           Container(
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
+              color: const Color(0xFFF97316).withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
-              Icons.account_balance_wallet_outlined,
-              color: Colors.white,
+              Icons.receipt_long_outlined,
+              color: Color(0xFFF97316),
               size: 22,
             ),
           ),
@@ -266,8 +213,6 @@ class _SummaryCard extends StatelessWidget {
     );
   }
 }
-
-// ── History Tile ──────────────────────────────────────────────────────────────
 
 class _HistTile extends StatelessWidget {
   final Invoice invoice;
@@ -278,120 +223,116 @@ class _HistTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final inv = invoice;
-    final dotColor = _histStatusColor(inv.status);
 
-    return InkWell(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => InvoiceDetailScreen(invoiceId: inv.id),
-        ),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              margin: const EdgeInsets.only(right: 12, top: 3),
-              decoration: BoxDecoration(
-                color: dotColor,
-                shape: BoxShape.circle,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () {
+          if (inv.isPaid) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ReceiptScreen(invoice: inv),
               ),
-            ),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Silakan bayar tagihan dari halaman Tagihan Internet.',
+                ),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                ),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      inv.formattedPeriod,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      inv.invoiceNumber,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                    if (inv.formattedPaidAt != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        inv.formattedPaidAt!,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: const Color(0xFF94A3B8),
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    inv.formattedPeriod,
+                    fmt.format(inv.amount),
                     style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1E293B),
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0F172A),
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    inv.invoiceNumber,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontFamily: 'monospace',
-                      color: Color(0xFF94A3B8),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  fmt.format(inv.amount),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF334155),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                if (inv.isPaid)
-                  GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ReceiptScreen(invoice: inv),
-                      ),
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF10B981),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(width: 4),
-                          Text(
-                            'LUNAS',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                else
+                  const SizedBox(height: 4),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
-                      vertical: 2,
+                      vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: dotColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: dotColor.withOpacity(0.3)),
+                      color: _statusBg(inv.status),
+                      borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       _histStatusLabel(inv.status),
                       style: TextStyle(
                         fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                        color: dotColor,
+                        fontWeight: FontWeight.w600,
+                        color: _statusText(inv.status),
                       ),
                     ),
                   ),
-              ],
-            ),
-          ],
+                ],
+              ),
+              const SizedBox(width: 4),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Color(0xFFCBD5E1),
+                size: 20,
+              ),
+            ],
+          ),
         ),
       ),
     );

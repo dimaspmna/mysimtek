@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../../core/constants/api_constants.dart';
@@ -12,6 +13,7 @@ class CustomerDashboardProvider extends ChangeNotifier {
   LoadState _state = LoadState.initial;
   CustomerDashboard? _dashboard;
   String? _error;
+  Timer? _pollingTimer;
 
   LoadState get state => _state;
   CustomerDashboard? get dashboard => _dashboard;
@@ -36,5 +38,25 @@ class CustomerDashboardProvider extends ChangeNotifier {
       _state = LoadState.error;
     }
     notifyListeners();
+  }
+
+  void startPolling({Duration interval = const Duration(seconds: 30)}) {
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(interval, (_) => _silentRefresh());
+  }
+
+  void stopPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
+  }
+
+  Future<void> _silentRefresh() async {
+    try {
+      final res = await _api.get(ApiConstants.customerDashboard);
+      _dashboard = CustomerDashboard.fromJson(res as Map<String, dynamic>);
+      notifyListeners();
+    } catch (_) {
+      // abaikan error saat polling background
+    }
   }
 }

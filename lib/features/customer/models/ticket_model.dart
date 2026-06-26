@@ -60,11 +60,64 @@ class Ticket {
 
   String get categoryLabel {
     const map = {
-      'no_signal': 'Tidak Ada Sinyal',
-      'slow_speed': 'Internet Lambat',
-      'intermittent': 'Putus-putus',
-      'hardware': 'Kerusakan Perangkat',
-      'other': 'Lainnya',
+      // Gangguan Layanan
+      'no_internet_access': 'Tidak Ada Sinyal',
+      'slow_internet': 'Internet Lambat',
+      'intermittent_connection': 'Koneksi Putus-Nyambung',
+      'power_loss': 'Power Loss',
+      // Kabel & Jalur
+      'cable_cut_damaged': 'Jalur Kabel Putus/Rusak',
+      'main_cable_cut': 'Jalur Utama Putus',
+      'pigtail_cut': 'Pigtail Putus',
+      'fiber_cut': 'Fiber Cut',
+      'cable_routing': 'Penataan Kabel',
+      'new_cable_installation': 'Pasang Jalur Baru',
+      'cable_migration': 'Migrasi Jalur',
+      'pole_relocation': 'Relokasi Tiang / Jalur',
+      'collapsed_pole': 'Tiang Roboh/Miring',
+      'short_distance_routing': 'Tarikan Jalur Jarak Dekat',
+      'short_distance_installation': 'Instalasi Jangkauan Dekat',
+      'short_distance_expansion': 'Perluasan Jangkauan Dekat',
+      // Perangkat Pelanggan
+      'device_damage': 'Kerusakan Perangkat',
+      'modem_router_damage': 'Modem/Router Rusak',
+      'onu_ont_offline': 'ONU/ONT Offline',
+      'adapter_damage': 'Adaptor Rusak',
+      'device_reset': 'Reset Perangkat',
+      'device_upgrade': 'Upgrade Perangkat',
+      // ODP/ODC/Core
+      'odp_damage': 'ODP Rusak',
+      'odc_damage': 'ODC Rusak',
+      'high_attenuation': 'Redaman Tinggi',
+      'odp_audit_labeling': 'Audit & Labelling ODP',
+      'core_down': 'Core Down',
+      'switch_down': 'Switch Down',
+      'port_error': 'Port Error / Port Mati',
+      'pln_outage': 'Gangguan Listrik PLN',
+      // Maintenance
+      'urgent_maintenance': 'Maintenance Urgent',
+      'backbone_repair': 'Perbaikan Backbone',
+      'network_troubleshooting': 'Troubleshooting Onsite',
+      'monitoring': 'Monitoring Gangguan',
+      'system_reconfiguration': 'Konfigurasi Ulang',
+      // Wireless & AP
+      'wireless_link_down': 'Wireless Link Down',
+      'access_point_trouble': 'Trouble Access Point',
+      'cctv_ip_camera_issue': 'Gangguan CCTV/IP Camera',
+      // Aktivasi
+      'new_customer_activation': 'Aktivasi Pelanggan Baru',
+      'package_change': 'Perubahan Paket Internet',
+      // Kendala
+      'mass_outage': 'Gangguan Massal Area',
+      'pending_materials': 'Pending Material',
+      'waiting_location_permit': 'Menunggu Izin Lokasi',
+      'weather_disaster': 'Kendala Cuaca / Bencana',
+      'short_range_limitation': 'Kendala Jangkauan Dekat',
+      'short_range_coverage': 'Area Cover Jangkauan Dekat',
+      'short_range_survey': 'Survey Jangkauan Dekat',
+      'short_range_optimization': 'Optimasi Jangkauan Dekat',
+      // Lainnya
+      'others': 'Lainnya',
     };
     return map[category] ?? category;
   }

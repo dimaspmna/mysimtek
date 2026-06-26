@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/constants/app_about.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_version.dart';
 import '../../../core/providers/auth_provider.dart';
@@ -33,6 +34,177 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  void _showAppAbout() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12, bottom: 8),
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Color(0xFFE2F8F0),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Color(0xFFFF6B00),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.info_outline,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Tentang Aplikasi',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 24, color: Color(0xFFF1F5F9)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _aboutRow('Nama Aplikasi', AppVersion.appName),
+                  const SizedBox(height: 12),
+                  _aboutRow(
+                    'Versi Aplikasi',
+                    '${AppVersion.version} (${AppVersion.build})',
+                  ),
+                  const SizedBox(height: 12),
+                  _aboutRow('Developer', 'Cogline Tech'),
+                ],
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 20, 20, 8),
+              child: Text(
+                'Apa yang baru:',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: AppAbout.features.asMap().entries.map((e) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          margin: const EdgeInsets.only(top: 4),
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFFF6B00),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            e.value,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF475569),
+                              height: 1.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF6B00),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Tutup',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _aboutRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1E293B),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
@@ -50,26 +222,16 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 50),
                 // Logo / Branding
                 Container(
-                  width: 80,
-                  height: 80,
+                  width: 150,
+                  height: 90,
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(15),
                     child: Image.asset(
-                      'assets/icon/app_icon_large.png',
+                      'assets/logo/ofa_logo.png',
                       fit: BoxFit.cover,
                     ),
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Text(
-                  'MySimtek - Pelanggan',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
                 const Text(
                   'Silakan masuk untuk melanjutkan.',
                   textAlign: TextAlign.center,
@@ -212,17 +374,21 @@ class _LoginScreenState extends State<LoginScreen> {
                 // Footer
                 Column(
                   children: [
-                    Text(
-                      '${AppVersion.appName} — VERSI ${AppVersion.version}',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                        letterSpacing: 0.5,
+                    GestureDetector(
+                      onTap: () => _showAppAbout(),
+                      child: Text(
+                        '${AppVersion.appName} - v${AppVersion.version} - ${AppVersion.build}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.primary,
+                          letterSpacing: 0.5,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 4),
                     const Text(
-                      '2026 © SIMTEK - DEVELOPED BY COGLINETECH',
+                      '2026 © DEVELOPED BY COGLINETECH',
                       style: TextStyle(
                         fontSize: 11,
                         color: AppColors.textSecondary,
@@ -239,21 +405,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         SizedBox(width: 4),
                         Text(
-                          'simtek.co.id',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        SizedBox(width: 16),
-                        Icon(
-                          Icons.language,
-                          size: 13,
-                          color: AppColors.textSecondary,
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          'billing.simtek.co.id',
+                          'ofa.my.id',
                           style: TextStyle(
                             fontSize: 11,
                             color: AppColors.textSecondary,

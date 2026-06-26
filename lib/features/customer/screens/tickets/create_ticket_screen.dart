@@ -14,14 +14,18 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
   final _formKey = GlobalKey<FormState>();
   final _subjectCtrl = TextEditingController();
   final _bodyCtrl = TextEditingController();
-  String _category = 'no_signal';
+  String _category = 'no_internet_access';
 
   static const _categories = [
-    ('no_signal', 'Tidak Ada Sinyal', Icons.signal_wifi_off_outlined),
-    ('slow_speed', 'Internet Lambat', Icons.speed_outlined),
-    ('intermittent', 'Putus-putus', Icons.sync_problem_outlined),
-    ('hardware', 'Kerusakan Perangkat', Icons.build_outlined),
-    ('other', 'Lainnya', Icons.help_outline),
+    ('no_internet_access', 'Tidak Ada Sinyal', Icons.signal_wifi_off_outlined),
+    ('slow_internet', 'Internet Lambat', Icons.speed_outlined),
+    (
+      'intermittent_connection',
+      'Koneksi Putus-Nyambung',
+      Icons.sync_problem_outlined,
+    ),
+    ('modem_router_damage', 'Modem/Router Rusak', Icons.build_outlined),
+    ('others', 'Lainnya', Icons.help_outline),
   ];
 
   @override
@@ -43,7 +47,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Laporan berhasil dikirim'),
+          content: Text('Komplain berhasil dikirim'),
           backgroundColor: AppColors.success,
         ),
       );
@@ -51,7 +55,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
       final err = context.read<TicketProvider>().listError;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(err ?? 'Gagal mengirim laporan'),
+          content: Text(err ?? 'Gagal mengirim Komplain'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -66,7 +70,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
-          'Buat Laporan',
+          'Buat Komplain',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         backgroundColor: Colors.white,
@@ -74,110 +78,100 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         centerTitle: false,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: AppColors.divider, height: 1),
+        ),
       ),
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Category selection
-            Card(
-              elevation: 0,
-              margin: EdgeInsets.zero,
-              shape: RoundedRectangleBorder(
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: AppColors.cardBorder),
+                border: Border.all(color: AppColors.cardBorder),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'JENIS GANGGUAN',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textSecondary,
-                        letterSpacing: 0.8,
-                      ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Pilih jenis gangguan yang sesuai:',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
                     ),
-                    const SizedBox(height: 12),
-                    GridView.count(
-                      crossAxisCount: 2,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      mainAxisSpacing: 8,
-                      crossAxisSpacing: 8,
-                      childAspectRatio: 3,
-                      children: [
-                        for (final cat in _categories)
-                          _CategoryOption(
-                            value: cat.$1,
-                            label: cat.$2,
-                            icon: cat.$3,
-                            selected: _category == cat.$1,
-                            onTap: () => setState(() => _category = cat.$1),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 14),
+                  GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    mainAxisSpacing: 8,
+                    crossAxisSpacing: 8,
+                    childAspectRatio: 3,
+                    children: [
+                      for (final cat in _categories)
+                        _CategoryChip(
+                          value: cat.$1,
+                          label: cat.$2,
+                          icon: cat.$3,
+                          selected: _category == cat.$1,
+                          onTap: () => setState(() => _category = cat.$1),
+                        ),
+                    ],
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 12),
-            // Detail form
-            Card(
-              elevation: 0,
-              margin: EdgeInsets.zero,
-              shape: RoundedRectangleBorder(
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: AppColors.cardBorder),
+                border: Border.all(color: AppColors.cardBorder),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'DETAIL LAPORAN',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textSecondary,
-                        letterSpacing: 0.8,
-                      ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Jelaskan masalah yang Anda alami:',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
                     ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _subjectCtrl,
-                      textInputAction: TextInputAction.next,
-                      style: const TextStyle(fontSize: 13),
-                      decoration: _inputDeco(
-                        label: 'Judul Masalah',
-                        hint: 'Contoh: Internet mati total sejak pagi',
-                      ),
-                      validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Judul wajib diisi'
-                          : null,
+                  ),
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    controller: _subjectCtrl,
+                    textInputAction: TextInputAction.next,
+                    decoration: _inputDeco(
+                      label: 'Judul Masalah',
+                      hint: 'Contoh: Internet mati total sejak pagi',
                     ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: _bodyCtrl,
-                      maxLines: 5,
-                      textInputAction: TextInputAction.done,
-                      style: const TextStyle(fontSize: 13),
-                      decoration: _inputDeco(
-                        label: 'Keterangan',
-                        hint:
-                            'Jelaskan masalahnya: kapan mulai terjadi, sudah coba restart atau belum, dll.',
-                      ),
-                      validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Keterangan wajib diisi'
-                          : null,
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'Judul wajib diisi'
+                        : null,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _bodyCtrl,
+                    maxLines: 5,
+                    textInputAction: TextInputAction.done,
+                    decoration: _inputDeco(
+                      label: 'Keterangan',
+                      hint:
+                          'Jelaskan masalahnya: kapan mulai terjadi, sudah coba restart atau belum, dll.',
                     ),
-                  ],
-                ),
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'Keterangan wajib diisi'
+                        : null,
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 20),
@@ -203,9 +197,9 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                         ),
                       )
                     : const Text(
-                        'Kirim Laporan',
+                        'Kirim Komplain',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 15,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -220,9 +214,12 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
   InputDecoration _inputDeco({required String label, String? hint}) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+      labelStyle: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
       hintText: hint,
-      hintStyle: const TextStyle(fontSize: 12, color: Color(0xFFBDBDBD)),
+      hintStyle: TextStyle(
+        fontSize: 13,
+        color: AppColors.textSecondary.withValues(alpha: 0.5),
+      ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: AppColors.cardBorder),
@@ -233,23 +230,22 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: AppColors.primary, width: 2),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      filled: true,
-      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      isDense: true,
     );
   }
 }
 
-class _CategoryOption extends StatelessWidget {
+class _CategoryChip extends StatelessWidget {
   final String value;
   final String label;
   final IconData icon;
   final bool selected;
   final VoidCallback onTap;
 
-  const _CategoryOption({
+  const _CategoryChip({
     required this.value,
     required this.label,
     required this.icon,
@@ -266,7 +262,7 @@ class _CategoryOption extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: selected
-              ? AppColors.primary.withOpacity(0.08)
+              ? AppColors.primary.withValues(alpha: 0.08)
               : const Color(0xFFF8FAFC),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(

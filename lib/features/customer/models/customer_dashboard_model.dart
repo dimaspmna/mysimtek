@@ -22,6 +22,29 @@ class DashboardBanner {
       );
 }
 
+class PopUpBanner {
+  final int id;
+  final String title;
+  final String? description;
+  final String imageUrl;
+
+  const PopUpBanner({
+    required this.id,
+    required this.title,
+    this.description,
+    required this.imageUrl,
+  });
+
+  factory PopUpBanner.fromJson(Map<String, dynamic> json) => PopUpBanner(
+    id: json['id'] is int
+        ? json['id'] as int
+        : int.tryParse(json['id'].toString()) ?? 0,
+    title: json['title']?.toString() ?? '',
+    description: json['description']?.toString(),
+    imageUrl: json['image_url']?.toString() ?? '',
+  );
+}
+
 class DashboardInvoice {
   final int id;
   final String invoiceNumber;
@@ -77,6 +100,7 @@ class CustomerDashboard {
   final int overdueInvoices;
   final List<DashboardInvoice> latestInvoices;
   final List<DashboardBanner> banners;
+  final List<PopUpBanner> popUpBanners;
 
   const CustomerDashboard({
     required this.serviceStatus,
@@ -91,6 +115,7 @@ class CustomerDashboard {
     this.overdueInvoices = 0,
     this.latestInvoices = const [],
     this.banners = const [],
+    this.popUpBanners = const [],
   });
 
   bool get hasPendingBilling => unpaidInvoices > 0 || overdueInvoices > 0;
@@ -112,6 +137,7 @@ class CustomerDashboard {
     final invoiceStats = (json['invoice_stats'] as Map<String, dynamic>?) ?? {};
     final invoicesRaw = json['latest_invoices'] as List? ?? [];
     final bannersRaw = json['banners'] as List? ?? [];
+    final popUpRaw = json['pop_up_banners'] as List? ?? [];
 
     return CustomerDashboard(
       serviceStatus: stats['status']?.toString() ?? 'aktif',
@@ -129,6 +155,9 @@ class CustomerDashboard {
           .toList(),
       banners: bannersRaw
           .map((e) => DashboardBanner.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      popUpBanners: popUpRaw
+          .map((e) => PopUpBanner.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
   }

@@ -63,6 +63,24 @@ class Invoice {
         period: period,
       );
 
+  /// Format paidAt ISO string ke "12 Juni 2026\n18.09 WIB"
+  String? get formattedPaidAt {
+    if (paidAt == null || paidAt!.isEmpty) return null;
+    try {
+      final dt = DateTime.parse(paidAt!);
+      const months = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+      ];
+      final date = '${dt.day} ${months[dt.month - 1]} ${dt.year}';
+      final time =
+          '${dt.hour.toString().padLeft(2, '0')}.${dt.minute.toString().padLeft(2, '0')} WIB';
+      return '$date\n$time';
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Format period_month (e.g. "2025-01") to "Januari 2025"
   String get formattedPeriod {
     final p = period;

@@ -6,7 +6,7 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
     <application
-        android:label="MySimtek"
+        android:label="OFA Mobile"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
@@ -40,7 +40,7 @@
         <!-- FCM default notification channel — must match channel ID in FcmService.dart -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="mysimtek_high_importance" />
+            android:value="ofa_high_importance" />
         <!-- FCM notification icon (white silhouette on transparent, API 21+) -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"

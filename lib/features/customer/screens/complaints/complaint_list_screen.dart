@@ -43,6 +43,8 @@ class _ComplaintListScreenState extends State<ComplaintListScreen> {
           );
         },
         backgroundColor: AppColors.primary,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         child: const Icon(Icons.add, color: Colors.white),
       ),
       body: Consumer<ComplaintProvider>(
@@ -65,16 +67,16 @@ class _ComplaintListScreenState extends State<ComplaintListScreen> {
             child: ListView.separated(
               padding: const EdgeInsets.all(16),
               itemCount: prov.complaints.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              separatorBuilder: (_, __) => const SizedBox(height: 6),
               itemBuilder: (context, i) {
                 final c = prov.complaints[i];
-                return Card(
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
+                return Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(10),
-                    side: const BorderSide(color: AppColors.cardBorder),
+                    border: Border.all(color: AppColors.cardBorder),
                   ),
-                  child: ListTile(
+                  child: InkWell(
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -82,33 +84,68 @@ class _ComplaintListScreenState extends State<ComplaintListScreen> {
                             ComplaintDetailScreen(complaintId: c.id),
                       ),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    leading: CircleAvatar(
-                      backgroundColor: AppColors.warning.withOpacity(0.1),
-                      child: const Icon(
-                        Icons.feedback,
-                        color: AppColors.warning,
-                        size: 20,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.feedback_outlined,
+                              color: AppColors.primary,
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  c.subject,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  c.categoryLabel,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.primary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  c.createdAt.split('T').first,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          StatusBadge(c.status),
+                        ],
                       ),
                     ),
-                    title: Text(
-                      c.subject,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    subtitle: Text(
-                      c.createdAt.split('T').first,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    trailing: StatusBadge(c.status),
                   ),
                 );
               },

@@ -28,15 +28,15 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     final body = message.data['body'] as String?;
     if (title != null || body != null) {
       const channel = AndroidNotificationChannel(
-        'mysimtek_high_importance',
-        'MySimtek Notifications',
-        description: 'Notifikasi penting dari MySimtek',
+        'ofa_high_importance',
+        'OFA Notifications',
+        description: 'Notifikasi penting dari OFA',
         importance: Importance.high,
       );
       final plugin = FlutterLocalNotificationsPlugin();
       await plugin.initialize(
         const InitializationSettings(
-          android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+          android: AndroidInitializationSettings('@drawable/ic_notification'),
           iOS: DarwinInitializationSettings(),
         ),
       );
@@ -58,7 +58,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
             channelDescription: channel.description,
             importance: Importance.high,
             priority: Priority.high,
-            icon: '@mipmap/ic_launcher',
+            icon: '@drawable/ic_notification',
           ),
           iOS: const DarwinNotificationDetails(),
         ),
@@ -76,6 +76,28 @@ class FcmService {
   /// Cached ApiService used by token-refresh listener and syncToken.
   static ApiService? _apiService;
 
+  /// Returns the current device FCM token, if available.
+  static Future<String?> getToken() async {
+    try {
+      return await _messaging.getToken();
+    } catch (e) {
+      debugPrint('[FCM] Failed to get FCM token: $e');
+      return null;
+    }
+  }
+
+  /// Request notification permission at runtime (useful for Android 13+).
+  /// Returns true if permission is granted, false otherwise.
+  static Future<bool> requestPermission() async {
+    final settings = await _messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+    debugPrint('[FCM] Runtime permission request: ${settings.authorizationStatus}');
+    return settings.authorizationStatus == AuthorizationStatus.authorized;
+  }
+
   /// Stream emitted when a foreground message arrives (for in-app refresh).
   static final _messageStreamController =
       StreamController<RemoteMessage>.broadcast();
@@ -89,9 +111,9 @@ class FcmService {
       _tapStreamController.stream;
 
   static const _androidChannel = AndroidNotificationChannel(
-    'mysimtek_high_importance',
-    'MySimtek Notifications',
-    description: 'Notifikasi penting dari MySimtek',
+    'ofa_high_importance',
+    'OFA Notifications',
+    description: 'Notifikasi penting dari OFA',
     importance: Importance.high,
   );
 
@@ -110,7 +132,8 @@ class FcmService {
     );
     debugPrint('[FCM] Permission: ${settings.authorizationStatus}');
 
-    if (settings.authorizationStatus == AuthorizationStatus.denied) return;
+    // Do NOT return early on denied — still set up listeners so token refresh works
+    // if user grants permission later via settings.
 
     // iOS: show notifications even when the app is in foreground
     await _messaging.setForegroundNotificationPresentationOptions(
@@ -168,18 +191,34 @@ class FcmService {
   /// Call this after the user successfully logs in to sync the FCM token.
   /// The token cannot be sent during app startup because the user is not
   /// authenticated yet and the server would reject the request with 401.
-  static Future<void> syncToken() async {
+  static Future<void> syncToken({int maxRetries = 3}) async {
     final api = _apiService;
-    if (api == null) return;
-    final token = await _messaging.getToken();
-    if (token != null) {
-      debugPrint('[FCM] Syncing token after login: $token');
-      await _sendTokenToServer(api, token);
+    if (api == null) {
+      throw Exception('FCM Service not initialized: _apiService is null');
     }
+
+    String? token;
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      token = await _messaging.getToken();
+      if (token != null) break;
+      debugPrint('[FCM] syncToken: getToken() returned null, retry $attempt/$maxRetries');
+      if (attempt < maxRetries) {
+        await Future.delayed(Duration(seconds: 2 * attempt));
+      }
+    }
+
+    if (token == null) {
+      throw Exception('Failed to get FCM token after $maxRetries attempts');
+    }
+
+    debugPrint('[FCM] Syncing token after login: $token');
+    await _sendTokenToServer(api, token);
   }
 
   static Future<void> _initLocalNotifications() async {
-    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidInit = AndroidInitializationSettings(
+      '@drawable/ic_notification',
+    );
     const iosInit = DarwinInitializationSettings();
     const initSettings = InitializationSettings(
       android: androidInit,
@@ -206,6 +245,7 @@ class FcmService {
       debugPrint('[FCM] Token synced to server.');
     } catch (e) {
       debugPrint('[FCM] Failed to sync token: $e');
+      rethrow;
     }
   }
 
@@ -230,7 +270,7 @@ class FcmService {
           channelDescription: _androidChannel.description,
           importance: Importance.high,
           priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
+          icon: '@drawable/ic_notification',
         ),
         iOS: const DarwinNotificationDetails(),
       ),

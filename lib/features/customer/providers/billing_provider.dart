@@ -118,10 +118,12 @@ class BillingProvider extends ChangeNotifier {
   Future<String?> getPaymentUrl(int invoiceId) async {
     _paymentUrlError = null;
     try {
-      // ApiService auto-unwraps { status, data } → returns data map directly
       final res = await _api.get(ApiConstants.customerPaymentUrl(invoiceId));
+      if (res is String && res.isNotEmpty) return res;
       if (res is Map) {
-        final url = res['payment_url']?.toString();
+        final url = res['payment_url']?.toString() ??
+            res['redirect_url']?.toString() ??
+            res['url']?.toString();
         if (url != null && url.isNotEmpty) return url;
       }
       return null;

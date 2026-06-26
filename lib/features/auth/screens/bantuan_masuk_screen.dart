@@ -29,7 +29,7 @@ class _BantuanMasukScreenState extends State<BantuanMasukScreen> {
 
     final nama = _namaCtrl.text.trim();
     final message = Uri.encodeComponent(
-      'Halo admin MySimtek, saya $nama ada kendala saat masuk ke aplikasi',
+      'Halo admin OFA, saya $nama ada kendala saat masuk ke aplikasi',
     );
     final uri = Uri.parse('https://wa.me/$_waNumber?text=$message');
 

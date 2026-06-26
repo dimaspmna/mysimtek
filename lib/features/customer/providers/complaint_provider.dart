@@ -33,9 +33,9 @@ class ComplaintProvider extends ChangeNotifier {
     _listError = null;
     notifyListeners();
     try {
-      final res = await _api.get(ApiConstants.customerComplaints);
-      final list = (res is Map && res.containsKey('complaints'))
-          ? res['complaints'] as List
+      final res = await _api.get(ApiConstants.customerTickets);
+      final list = (res is Map && res.containsKey('tickets'))
+          ? res['tickets'] as List
           : (res is List ? res : []);
       _complaints = list
           .map((e) => Complaint.fromJson(e as Map<String, dynamic>))
@@ -52,9 +52,9 @@ class ComplaintProvider extends ChangeNotifier {
     _detailError = null;
     notifyListeners();
     try {
-      final res = await _api.get(ApiConstants.customerComplaintDetail(id));
-      final data = (res is Map && res.containsKey('complaint'))
-          ? res['complaint'] as Map<String, dynamic>
+      final res = await _api.get(ApiConstants.customerTicketDetail(id));
+      final data = (res is Map && res.containsKey('ticket'))
+          ? res['ticket'] as Map<String, dynamic>
           : res as Map<String, dynamic>;
       _current = Complaint.fromJson(data);
     } on ApiException catch (e) {
@@ -64,14 +64,14 @@ class ComplaintProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> create(String subject, String body) async {
+  Future<bool> create(String subject, String body, String category) async {
     _submitting = true;
     notifyListeners();
     try {
-      await _api.post(ApiConstants.customerComplaints, {
+      await _api.post(ApiConstants.customerTickets, {
         'subject': subject,
         'description': body,
-        'priority': 'medium',
+        'category': category,
       });
       _submitting = false;
       notifyListeners();
@@ -89,7 +89,7 @@ class ComplaintProvider extends ChangeNotifier {
     _submitting = true;
     notifyListeners();
     try {
-      await _api.post(ApiConstants.customerComplaintReply(complaintId), {
+      await _api.post(ApiConstants.customerTicketMessages(complaintId), {
         'message': message,
       });
       _submitting = false;

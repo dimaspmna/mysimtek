@@ -32,7 +32,7 @@ class _LaporScreenState extends State<LaporScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
-          'Lapor Gangguan',
+          'Daftar Komplain',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         backgroundColor: Colors.white,
@@ -40,6 +40,10 @@ class _LaporScreenState extends State<LaporScreen> {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         centerTitle: false,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: AppColors.divider, height: 1),
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
@@ -52,6 +56,8 @@ class _LaporScreenState extends State<LaporScreen> {
           }
         },
         backgroundColor: AppColors.primary,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         child: const Icon(Icons.add, color: Colors.white),
       ),
       body: Consumer<TicketProvider>(
@@ -73,40 +79,22 @@ class _LaporScreenState extends State<LaporScreen> {
               .where((t) => t.status == 'resolved' || t.status == 'closed')
               .length;
 
-          final statsRow = Row(
-            children: [
-              _StatCard(
-                label: 'Total',
-                value: total,
-                iconData: Icons.receipt_long_outlined,
-              ),
-              const SizedBox(width: 8),
-              _StatCard(
-                label: 'Berjalan',
-                value: open,
-                iconData: Icons.hourglass_top_outlined,
-              ),
-              const SizedBox(width: 8),
-              _StatCard(
-                label: 'Selesai',
-                value: resolved,
-                iconData: Icons.check_circle_outline,
-              ),
-            ],
-          );
-
           if (tickets.isEmpty) {
             return Column(
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: statsRow,
+                  child: _StatsRow(
+                    total: total,
+                    open: open,
+                    resolved: resolved,
+                  ),
                 ),
                 const Expanded(
                   child: Center(
                     child: AppEmptyState(
                       message:
-                          'Belum ada laporan gangguan.\nTekan + untuk buat laporan baru.',
+                          'Belum ada komplain baru.\nTekan + untuk buat tiket komplain baru.',
                       icon: Icons.handyman_outlined,
                     ),
                   ),
@@ -121,28 +109,12 @@ class _LaporScreenState extends State<LaporScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                statsRow,
-                const SizedBox(height: 8),
-                Card(
-                  elevation: 0,
-                  margin: EdgeInsets.zero,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: const BorderSide(color: AppColors.cardBorder),
-                  ),
-                  child: Column(
-                    children: [
-                      for (int i = 0; i < tickets.length; i++) ...[
-                        if (i > 0)
-                          const Divider(
-                            height: 1,
-                            indent: 16,
-                            endIndent: 16,
-                            color: AppColors.cardBorder,
-                          ),
-                        _TicketItem(ticket: tickets[i]),
-                      ],
-                    ],
+                _StatsRow(total: total, open: open, resolved: resolved),
+                const SizedBox(height: 12),
+                ...tickets.map(
+                  (t) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _TicketCard(ticket: t),
                   ),
                 ),
               ],
@@ -154,61 +126,64 @@ class _LaporScreenState extends State<LaporScreen> {
   }
 }
 
+class _StatsRow extends StatelessWidget {
+  final int total;
+  final int open;
+  final int resolved;
+  const _StatsRow({
+    required this.total,
+    required this.open,
+    required this.resolved,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _StatCard(label: 'Total', value: total),
+        const SizedBox(width: 8),
+        _StatCard(label: 'Proses', value: open),
+        const SizedBox(width: 8),
+        _StatCard(label: 'Selesai', value: resolved),
+      ],
+    );
+  }
+}
+
 class _StatCard extends StatelessWidget {
   final String label;
   final int value;
-  final IconData iconData;
 
-  const _StatCard({
-    required this.label,
-    required this.value,
-    required this.iconData,
-  });
+  const _StatCard({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFF97316), Color(0xFFEA580C)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFEA580C).withOpacity(0.25),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border: Border.all(color: AppColors.cardBorder),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Icon(iconData, color: Colors.white.withOpacity(0.85), size: 18),
-                Text(
-                  '$value',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
+            Text(
+              '$value',
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+                height: 1,
+              ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 2),
             Text(
               label,
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.white.withOpacity(0.75),
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.textSecondary,
               ),
             ),
           ],
@@ -218,49 +193,78 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-class _TicketItem extends StatelessWidget {
+class _TicketCard extends StatelessWidget {
   final Ticket ticket;
-
-  const _TicketItem({required this.ticket});
+  const _TicketCard({required this.ticket});
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => TicketDetailScreen(ticketId: ticket.id),
-        ),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.cardBorder),
       ),
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      child: InkWell(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => TicketDetailScreen(ticketId: ticket.id),
+          ),
+        ),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  if (ticket.ticketNumber.isNotEmpty)
-                    Text(
-                      ticket.ticketNumber,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textSecondary,
-                        fontFamily: 'monospace',
-                      ),
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                  const SizedBox(height: 2),
-                  Text(
-                    ticket.subject,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                    child: const Icon(
+                      Icons.handyman_outlined,
+                      color: AppColors.primary,
+                      size: 20,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          ticket.subject,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (ticket.ticketNumber.isNotEmpty)
+                          Text(
+                            '#${ticket.ticketNumber}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  StatusBadge(ticket.status),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
                   Text(
                     ticket.categoryLabel,
                     style: const TextStyle(
@@ -268,45 +272,49 @@ class _TicketItem extends StatelessWidget {
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      StatusBadge(ticket.status),
-                      if (ticket.hasAssignedTechnician) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Text(
-                            'Teknisi',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF475569),
-                            ),
-                          ),
+                  if (ticket.hasAssignedTechnician) ...[
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 6),
+                      child: Text(
+                        '\u2022',
+                        style: TextStyle(
+                          color: AppColors.divider,
+                          fontSize: 11,
                         ),
-                      ],
-                    ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.person_outline,
+                      size: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 3),
+                    Text(
+                      'Teknisi',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                  const Spacer(),
+                  Icon(
+                    Icons.calendar_today_outlined,
+                    size: 10,
+                    color: AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    ticket.createdAt.split('T').first,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              ticket.createdAt.split('T').first,
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -1,42 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/widgets/app_loading.dart';
 import '../../../../core/widgets/app_error_view.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../models/invoice_model.dart';
 import '../../providers/billing_provider.dart';
-import 'invoice_detail_screen.dart';
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-Color _statusColor(String status) {
-  switch (status.toLowerCase()) {
-    case 'paid':
-    case 'lunas':
-      return const Color(0xFF10B981);
-    case 'overdue':
-      return const Color(0xFFEF4444);
-    case 'unpaid':
-      return const Color(0xFFF97316);
-    default:
-      return const Color(0xFF94A3B8);
-  }
-}
-
-String _statusLabel(String status) {
-  const map = {
-    'paid': 'Lunas',
-    'lunas': 'Lunas',
-    'overdue': 'Jatuh Tempo',
-    'unpaid': 'Belum Bayar',
-    'pending': 'Pending',
-  };
-  return map[status.toLowerCase()] ?? status;
-}
-
-// ─── Main Screen ──────────────────────────────────────────────────────────────
+import '../../providers/customer_dashboard_provider.dart';
+import 'payment_history_screen.dart';
 
 class BillingScreen extends StatefulWidget {
   const BillingScreen({super.key});
@@ -48,10 +21,8 @@ class BillingScreen extends StatefulWidget {
 class _BillingScreenState extends State<BillingScreen>
     with WidgetsBindingObserver {
   bool _awaitingPayment = false;
-  // IDs of invoices that were UNPAID before the user went to pay.
-  // The billing API only returns unpaid/overdue — so if one disappears
-  // after reload it means it just got paid.
   Set<int> _unpaidBeforePayment = {};
+  bool _loadingPay = false;
 
   @override
   void initState() {
@@ -81,8 +52,6 @@ class _BillingScreenState extends State<BillingScreen>
     final provider = context.read<BillingProvider>();
     await provider.loadActiveBilling();
     if (!mounted) return;
-    // The billing API only returns unpaid/overdue invoices.
-    // If any previously-unpaid ID is now absent → it got paid.
     final currentUnpaidIds = (provider.activeBilling?.invoices ?? [])
         .map((inv) => inv.id)
         .toSet();
@@ -122,12 +91,44 @@ class _BillingScreenState extends State<BillingScreen>
 
   void _onPaymentInitiated() {
     final provider = context.read<BillingProvider>();
-    // Save IDs of all currently unpaid invoices (the billing API only
-    // returns unpaid/overdue, so every entry in this list is unpaid).
     _unpaidBeforePayment = (provider.activeBilling?.invoices ?? [])
         .map((inv) => inv.id)
         .toSet();
     _awaitingPayment = true;
+  }
+
+  Future<void> _handleMidtransPay(Invoice inv) async {
+    setState(() => _loadingPay = true);
+    final prov = context.read<BillingProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+    final paymentUrl = await prov.getPaymentUrl(inv.id);
+    if (!mounted) return;
+    setState(() => _loadingPay = false);
+
+    if (paymentUrl == null) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Gagal mendapatkan link pembayaran'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+    final launched = await launchUrl(
+      Uri.parse(paymentUrl),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!mounted) return;
+    if (!launched) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Gagal membuka browser. Coba lagi.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+    _onPaymentInitiated();
   }
 
   @override
@@ -147,20 +148,21 @@ class _BillingScreenState extends State<BillingScreen>
       ),
       body: _TagihanTab(
         onRefresh: () => context.read<BillingProvider>().loadActiveBilling(),
-        onPaymentInitiated: _onPaymentInitiated,
+        onPay: _handleMidtransPay,
+        loadingPay: _loadingPay,
       ),
     );
   }
 }
 
-// ─── Tab: Tagihan ─────────────────────────────────────────────────────────────
-
 class _TagihanTab extends StatelessWidget {
   final VoidCallback onRefresh;
-  final VoidCallback onPaymentInitiated;
+  final Future<void> Function(Invoice) onPay;
+  final bool loadingPay;
   const _TagihanTab({
     required this.onRefresh,
-    required this.onPaymentInitiated,
+    required this.onPay,
+    required this.loadingPay,
   });
 
   @override
@@ -183,22 +185,8 @@ class _TagihanTab extends StatelessWidget {
           decimalDigits: 0,
         );
 
-        final summaryCard = _SummaryCard(
-          total: invoices.length,
-          lunas: lunas,
-          totalBayar: fmt.format(totalBayar),
-        );
-
         if (invoices.isEmpty) {
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: summaryCard,
-              ),
-              Expanded(child: Center(child: _buildEmptyTagihan())),
-            ],
-          );
+          return _buildEmptyState(context, prov, fmt, lunas, totalBayar);
         }
 
         return RefreshIndicator(
@@ -207,12 +195,22 @@ class _TagihanTab extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
             children: [
-              summaryCard,
-              const SizedBox(height: 12),
+              _SummaryCard(
+                total: invoices.length,
+                lunas: lunas,
+                totalBayar: fmt.format(totalBayar),
+                invoices: invoices,
+              ),
+              const SizedBox(height: 14),
               ...invoices.map(
-                (inv) => _InvoiceActiveCard(
-                  invoice: inv,
-                  onPaymentInitiated: onPaymentInitiated,
+                (inv) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _InvoiceCard(
+                    invoice: inv,
+                    fmt: fmt,
+                    loadingPay: loadingPay,
+                    onPay: () => onPay(inv),
+                  ),
                 ),
               ),
             ],
@@ -222,328 +220,449 @@ class _TagihanTab extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyTagihan() {
+  Widget _buildEmptyState(
+    BuildContext context,
+    BillingProvider prov,
+    NumberFormat fmt,
+    int lunas,
+    double totalBayar,
+  ) {
+    final summaryCard = _SummaryCard(
+      total: 0,
+      lunas: lunas,
+      totalBayar: fmt.format(totalBayar),
+      showAllPaid: true,
+      dueDate: prov.activeBilling?.stats.nextDueDate,
+    );
+
     return Column(
-      mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 56,
-          height: 56,
-          decoration: const BoxDecoration(
-            color: Color.fromARGB(255, 3, 152, 83),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(
-            Icons.check_outlined,
-            color: Color.fromARGB(255, 255, 255, 255),
-            size: 28,
-          ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: summaryCard,
         ),
-        const SizedBox(height: 12),
-        const Text(
-          'Semua tagihan lunas!',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF334155),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+            children: [
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFF1F5F9)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.check_circle_rounded,
+                      size: 52,
+                      color: Color(0xFF10B981),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Tagihan lunas',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1E293B),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Tidak ada tagihan yang perlu dibayar.',
+                      style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                    ),
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const PaymentHistoryScreen(),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        'Lihat Riwayat Pembayaran',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Tidak ada tagihan yang perlu dibayar.',
-          style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
         ),
       ],
     );
   }
 }
 
-// ─── Summary Card ────────────────────────────────────────────────────────────
-
 class _SummaryCard extends StatelessWidget {
   final int total;
   final int lunas;
   final String totalBayar;
+  final bool showAllPaid;
+  final String? dueDate;
+  final List<Invoice>? invoices;
 
   const _SummaryCard({
     required this.total,
     required this.lunas,
     required this.totalBayar,
+    this.showAllPaid = false,
+    this.dueDate,
+    this.invoices,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFF97316), Color(0xFFEA580C)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFEA580C).withOpacity(0.25),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
       padding: const EdgeInsets.all(18),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'TOTAL PEMBAYARAN',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white.withOpacity(0.7),
-                    letterSpacing: 0.8,
-                  ),
+          Row(
+            children: [
+              Expanded(
+                child: showAllPaid
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Text(
+                                'Tagihan lunas',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF0F172A),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Tidak ada tagihan yang perlu dibayar.',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                          if (dueDate != null) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              'Jatuh tempo: $dueDate',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'TOTAL PEMBAYARAN',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF64748B),
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            totalBayar,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0F172A),
+                              height: 1.2,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF97316).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  totalBayar,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    height: 1.2,
-                  ),
+                child: const Icon(
+                  Icons.credit_card_rounded,
+                  color: Color(0xFFF97316),
+                  size: 22,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.account_balance_wallet_outlined,
-              color: Colors.white,
-              size: 22,
-            ),
-          ),
+          if (!showAllPaid && invoices != null && invoices!.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Container(height: 1, color: const Color(0xFFF1F5F9)),
+          ],
         ],
       ),
     );
   }
 }
 
-// ─── Active Invoice Card ──────────────────────────────────────────────────────
-
-class _InvoiceActiveCard extends StatefulWidget {
+class _InvoiceCard extends StatelessWidget {
   final Invoice invoice;
-  final VoidCallback? onPaymentInitiated;
-  const _InvoiceActiveCard({required this.invoice, this.onPaymentInitiated});
+  final NumberFormat fmt;
+  final bool loadingPay;
+  final VoidCallback onPay;
 
-  @override
-  State<_InvoiceActiveCard> createState() => _InvoiceActiveCardState();
-}
-
-class _InvoiceActiveCardState extends State<_InvoiceActiveCard> {
-  bool _loadingPay = false;
+  const _InvoiceCard({
+    required this.invoice,
+    required this.fmt,
+    required this.loadingPay,
+    required this.onPay,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final inv = widget.invoice;
-    final fmt = NumberFormat.currency(
-      locale: 'id_ID',
-      symbol: 'Rp ',
-      decimalDigits: 0,
-    );
-    final isOverdue = inv.isOverdue;
+    final inv = invoice;
+    final packageName =
+        inv.packageName ??
+        context.read<AuthProvider>().user?.packageName ??
+        context.read<CustomerDashboardProvider>().dashboard?.packageName ??
+        '-';
 
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => InvoiceDetailScreen(invoiceId: inv.id),
-        ),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFF1F5F9)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 1),
-            ),
-          ],
-        ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _StatusPill(inv.status),
-                        const SizedBox(height: 6),
-                        Text(
-                          inv.formattedPeriod,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1E293B),
-                          ),
-                        ),
-                        if (isOverdue && inv.dueDate.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            'Jatuh tempo: ${inv.dueDate}',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: Color(0xFFEF4444),
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 8),
-                        Text(
-                          inv.invoiceNumber,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontFamily: 'monospace',
-                            color: Color(0xFF94A3B8),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        fmt.format(inv.amount),
+                        inv.invoiceNumber,
                         style: const TextStyle(
-                          fontSize: 18,
                           fontWeight: FontWeight.bold,
+                          fontSize: 15,
                           color: Color(0xFF1E293B),
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      GestureDetector(
-                        onTap: _loadingPay
-                            ? null
-                            : () => _handlePay(context, inv),
-                        child: AnimatedOpacity(
-                          opacity: _loadingPay ? 0.6 : 1.0,
-                          duration: const Duration(milliseconds: 150),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const SizedBox(width: 5),
-                                Text(
-                                  _loadingPay
-                                      ? 'Memproses...'
-                                      : 'Bayar Sekarang',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                      const SizedBox(height: 4),
+                      Text(
+                        inv.formattedPeriod,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: Color(0xFF1E293B),
                         ),
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color:
+                        (inv.isPaid
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFFF97316))
+                            .withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    inv.status.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: inv.isPaid
+                          ? const Color(0xFF10B981)
+                          : const Color(0xFFF97316),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ],
             ),
+            const SizedBox(height: 16),
+            _row('Paket', packageName),
+            _row('Jatuh Tempo', inv.dueDate),
+            if (inv.paidAt != null) ...[
+              const SizedBox(height: 8),
+              _row('Tanggal Bayar', inv.paidAt!.split('T').first),
+            ],
+            if (inv.paymentMethod != null) ...[
+              const SizedBox(height: 8),
+              _row('Metode Bayar', _formatPaymentMethod(inv.paymentMethod!)),
+            ],
+            const SizedBox(height: 16),
+            if (inv.items.isNotEmpty) ...[
+              ...inv.items.map(
+                (item) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item.description,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF475569),
+                          ),
+                        ),
+                      ),
+                      Text(
+                        fmt.format(item.amount),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1E293B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+            ],
+            Container(height: 1, color: const Color(0xFFF1F5F9)),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Total',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+                Text(
+                  fmt.format(inv.amount),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
+            if (!inv.isPaid) ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: loadingPay ? null : onPay,
+                  child: loadingPay
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(Colors.white),
+                          ),
+                        )
+                      : const Text(
+                          'Bayar Sekarang',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
   }
 
-  Future<void> _handlePay(BuildContext context, Invoice inv) async {
-    setState(() => _loadingPay = true);
-    final provider = context.read<BillingProvider>();
-    final messenger = ScaffoldMessenger.of(context);
-
-    final paymentUrl = await provider.getPaymentUrl(inv.id);
-    if (!mounted) return;
-    setState(() => _loadingPay = false);
-
-    if (paymentUrl == null) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Gagal mendapatkan link pembayaran'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
-
-    final uri = Uri.parse(paymentUrl);
-    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!mounted) return;
-    if (!launched) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Gagal membuka browser. Coba lagi.'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
-    widget.onPaymentInitiated?.call();
+  String _formatPaymentMethod(String method) {
+    final upper = method.toUpperCase();
+    if (!upper.startsWith('VIA ')) return 'VIA $upper';
+    return upper;
   }
-}
 
-// ─── Status Pill ──────────────────────────────────────────────────────────────
-
-class _StatusPill extends StatelessWidget {
-  final String status;
-  const _StatusPill(this.status);
-
-  @override
-  Widget build(BuildContext context) {
-    final color = _statusColor(status);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Text(
-        _statusLabel(status),
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
-          color: color,
+  Widget _row(String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 80,
+          child: Text(
+            label,
+            style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+          ),
         ),
-      ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF1E293B),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

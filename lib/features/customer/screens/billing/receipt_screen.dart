@@ -48,11 +48,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
         RegExp(r'[/\\:*?"<>|]'),
         '-',
       );
-      await Gal.putImageBytes(
-        pngBytes,
-        name: 'struk_$safeNum',
-        album: 'MySimtek',
-      );
+      await Gal.putImageBytes(pngBytes, name: 'struk_$safeNum', album: 'OFA');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -377,14 +373,14 @@ class _ReceiptHeader extends StatelessWidget {
               ],
             ),
             padding: const EdgeInsets.all(6),
-            child: Image.asset('assets/logo/mysimtek.png', fit: BoxFit.contain),
+            child: Image.asset('assets/logo/ofa_logo.png', fit: BoxFit.contain),
           ),
           const SizedBox(width: 14),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'SIMTEK',
+                'OFA MOBILE',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w900,

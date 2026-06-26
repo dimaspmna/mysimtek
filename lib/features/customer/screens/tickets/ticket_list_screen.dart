@@ -39,6 +39,10 @@ class _TicketListScreenState extends State<TicketListScreen> {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         centerTitle: false,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: AppColors.divider, height: 1),
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
@@ -48,6 +52,10 @@ class _TicketListScreenState extends State<TicketListScreen> {
           );
         },
         backgroundColor: AppColors.primary,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
         child: const Icon(Icons.add, color: Colors.white),
       ),
       body: Consumer<TicketProvider>(
@@ -73,49 +81,119 @@ class _TicketListScreenState extends State<TicketListScreen> {
             child: ListView.separated(
               padding: const EdgeInsets.all(16),
               itemCount: prov.tickets.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
               itemBuilder: (context, i) {
                 final t = prov.tickets[i];
-                return Card(
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    side: const BorderSide(color: AppColors.cardBorder),
+                return Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.cardBorder),
                   ),
-                  child: ListTile(
+                  child: InkWell(
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (_) => TicketDetailScreen(ticketId: t.id),
                       ),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    leading: CircleAvatar(
-                      backgroundColor: AppColors.primary.withOpacity(0.1),
-                      child: const Icon(
-                        Icons.bug_report,
-                        color: AppColors.primary,
-                        size: 20,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppColors.primary.withValues(alpha: 0.12),
+                                  AppColors.primary.withValues(alpha: 0.05),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.confirmation_number_outlined,
+                              color: AppColors.primary,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  t.subject,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    if (t.ticketNumber.isNotEmpty) ...[
+                                      Icon(
+                                        Icons.tag,
+                                        size: 11,
+                                        color: AppColors.textSecondary
+                                            .withValues(alpha: 0.6),
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        t.ticketNumber,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: AppColors.textSecondary
+                                              .withValues(alpha: 0.7),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        width: 3,
+                                        height: 3,
+                                        decoration: const BoxDecoration(
+                                          color: AppColors.divider,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                    ],
+                                    Icon(
+                                      Icons.calendar_today_outlined,
+                                      size: 11,
+                                      color: AppColors.textSecondary
+                                          .withValues(alpha: 0.6),
+                                    ),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      t.createdAt.split('T').first,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          StatusBadge(t.status),
+                        ],
                       ),
                     ),
-                    title: Text(
-                      t.subject,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    subtitle: Text(
-                      t.createdAt.split('T').first,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    trailing: StatusBadge(t.status),
                   ),
                 );
               },

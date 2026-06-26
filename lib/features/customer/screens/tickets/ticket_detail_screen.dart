@@ -63,7 +63,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
-          'Detail Tiket',
+          'Detail Komplain',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         backgroundColor: Colors.white,
@@ -71,6 +71,10 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         centerTitle: false,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: AppColors.divider, height: 1),
+        ),
       ),
       body: Consumer<TicketProvider>(
         builder: (context, prov, _) {
@@ -84,7 +88,6 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
           final ticket = prov.currentTicket;
           if (ticket == null) return const AppLoading();
 
-          // Auto-scroll hanya ketika ada pesan baru masuk
           final msgCount = ticket.messages.length;
           if (msgCount > _lastMessageCount) {
             _lastMessageCount = msgCount;
@@ -93,124 +96,34 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
           return Column(
             children: [
-              // Ticket info header + progress tracking (fixed, tidak scroll)
-              Container(
-                color: Colors.white,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (ticket.ticketNumber.isNotEmpty)
-                                  RichText(
-                                    text: TextSpan(
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.textPrimary,
-                                      ),
-                                      children: [
-                                        const TextSpan(text: 'No. Tiket: '),
-                                        TextSpan(
-                                          text: ticket.ticketNumber,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                const SizedBox(height: 2),
-                                RichText(
-                                  text: TextSpan(
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                    children: [
-                                      const TextSpan(
-                                        text: 'Masalah: ',
-                                        style: TextStyle(
-                                          color: AppColors.textPrimary,
-                                        ),
-                                      ),
-                                      TextSpan(
-                                        text: ticket.subject,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                RichText(
-                                  text: TextSpan(
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                    children: [
-                                      const TextSpan(text: 'Dibuat: '),
-                                      TextSpan(
-                                        text: ticket.createdAt.split('T').first,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          StatusBadge(ticket.status),
-                        ],
-                      ),
-                    ),
-                    const Divider(height: 1, color: AppColors.divider),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                      child: _ProgressTracking(ticket: ticket),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1, color: AppColors.divider),
-              // Technician info + messages
+              _TicketHeader(ticket: ticket),
               Expanded(
                 child: ListView(
                   controller: _scrollCtrl,
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                   children: [
-                    // Technician info
                     if (ticket.hasAssignedTechnician &&
                         ticket.technicianName != null) ...[
                       _TechnicianCard(ticket: ticket),
                       const SizedBox(height: 12),
                     ],
-                    // Messages / description
                     if (ticket.messages.isEmpty)
-                      _buildInitialDescription(ticket.body)
+                      _InitialDescription(body: ticket.body)
                     else
                       ...ticket.messages.map(
-                        (msg) => _MessageBubble(
-                          body: msg.body,
-                          senderName: msg.senderName,
-                          isFromCustomer: msg.isFromCustomer,
-                          time: msg.createdAt.split('T').first,
+                        (msg) => Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: _MessageBubble(
+                            body: msg.body,
+                            senderName: msg.senderName,
+                            isFromCustomer: msg.isFromCustomer,
+                            time: msg.createdAt.split('T').first,
+                          ),
                         ),
                       ),
                   ],
                 ),
               ),
-              // Reply input
               if (ticket.status.toLowerCase() != 'closed')
                 _ReplyInput(
                   controller: _replyCtrl,
@@ -240,28 +153,133 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       ),
     );
   }
+}
 
-  Widget _buildInitialDescription(String body) {
+class _TicketHeader extends StatelessWidget {
+  final Ticket ticket;
+  const _TicketHeader({required this.ticket});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Deskripsi',
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: AppColors.primary,
-              fontSize: 13,
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.primary.withValues(alpha: 0.12),
+                      AppColors.primary.withValues(alpha: 0.05),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.confirmation_number_outlined,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      ticket.subject,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        color: AppColors.textPrimary,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    if (ticket.ticketNumber.isNotEmpty)
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.tag,
+                            size: 12,
+                            color: AppColors.textSecondary.withValues(
+                              alpha: 0.7,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            ticket.ticketNumber,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textSecondary.withValues(
+                                alpha: 0.8,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              StatusBadge(ticket.status),
+            ],
           ),
-          const SizedBox(height: 6),
-          Text(body),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  ticket.categoryLabel,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.calendar_today_outlined,
+                size: 10,
+                color: AppColors.textSecondary.withValues(alpha: 0.6),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                ticket.createdAt.split('T').first,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _ProgressTracking(ticket: ticket),
         ],
       ),
     );
@@ -270,7 +288,6 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
 class _ProgressTracking extends StatelessWidget {
   final Ticket ticket;
-
   const _ProgressTracking({required this.ticket});
 
   @override
@@ -282,7 +299,7 @@ class _ProgressTracking extends StatelessWidget {
     final steps = [
       (label: 'Diterima', done: true),
       (
-        label: 'Proses',
+        label: 'Diproses',
         done: ['in_progress', 'resolved', 'closed'].contains(status),
       ),
       (label: 'Teknisi', done: hasAssigned),
@@ -298,18 +315,32 @@ class _ProgressTracking extends StatelessWidget {
       (label: 'Selesai', done: ['resolved', 'closed'].contains(status)),
     ];
 
+    final activeCount = steps.where((s) => s.done).length;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Progress Penanganan',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
+        Row(
+          children: [
+            const Text(
+              'Progress',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              '$activeCount dari ${steps.length}',
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         Row(
           children: [
             for (int i = 0; i < steps.length; i++) ...[
@@ -318,39 +349,50 @@ class _ProgressTracking extends StatelessWidget {
                 child: Column(
                   children: [
                     Container(
-                      width: 24,
-                      height: 24,
+                      width: 26,
+                      height: 26,
                       decoration: BoxDecoration(
-                        color: steps[i].done
-                            ? AppColors.primary
-                            : const Color(0xFFF1F5F9),
+                        gradient: steps[i].done
+                            ? LinearGradient(
+                                colors: [
+                                  AppColors.primary,
+                                  AppColors.primaryLight,
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              )
+                            : null,
+                        color: steps[i].done ? null : const Color(0xFFF1F5F9),
                         shape: BoxShape.circle,
                       ),
-                      child: steps[i].done
-                          ? const Icon(
-                              Icons.check,
-                              size: 13,
-                              color: Colors.white,
-                            )
-                          : const Center(
-                              child: SizedBox(
+                      child: Center(
+                        child: steps[i].done
+                            ? const Icon(
+                                Icons.check,
+                                size: 14,
+                                color: Colors.white,
+                              )
+                            : Container(
                                 width: 8,
                                 height: 8,
-                                child: DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    color: Color(0xFFCBD5E1),
-                                    shape: BoxShape.circle,
-                                  ),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFCBD5E1),
+                                  shape: BoxShape.circle,
                                 ),
                               ),
-                            ),
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       steps[i].label,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 9,
-                        color: AppColors.textSecondary,
+                        fontWeight: steps[i].done
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                        color: steps[i].done
+                            ? AppColors.primary
+                            : AppColors.textSecondary,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -362,10 +404,21 @@ class _ProgressTracking extends StatelessWidget {
                   flex: 1,
                   child: Container(
                     height: 2,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    color: (steps[i].done && steps[i + 1].done)
-                        ? AppColors.primary.withOpacity(0.4)
-                        : const Color(0xFFF1F5F9),
+                    margin: const EdgeInsets.only(bottom: 18),
+                    decoration: BoxDecoration(
+                      gradient: (steps[i].done && steps[i + 1].done)
+                          ? LinearGradient(
+                              colors: [
+                                AppColors.primary.withValues(alpha: 0.6),
+                                AppColors.primary,
+                              ],
+                            )
+                          : null,
+                      color: (steps[i].done && steps[i + 1].done)
+                          ? null
+                          : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(1),
+                    ),
                   ),
                 ),
             ],
@@ -378,13 +431,11 @@ class _ProgressTracking extends StatelessWidget {
 
 class _TechnicianCard extends StatelessWidget {
   final Ticket ticket;
-
   const _TechnicianCard({required this.ticket});
 
   @override
   Widget build(BuildContext context) {
     final name = ticket.technicianName!;
-    final phone = ticket.technicianPhone;
     final fieldStatus = ticket.fieldStatus;
     final fieldLabel = _fieldStatusLabel(fieldStatus);
 
@@ -392,17 +443,31 @@ class _TechnicianCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.cardBorder),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primary.withValues(alpha: 0.12),
+                  AppColors.primary.withValues(alpha: 0.05),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
               child: Text(
@@ -410,7 +475,7 @@ class _TechnicianCard extends StatelessWidget {
                 style: const TextStyle(
                   color: AppColors.primary,
                   fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                  fontSize: 16,
                 ),
               ),
             ),
@@ -423,11 +488,12 @@ class _TechnicianCard extends StatelessWidget {
                 Text(
                   name,
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
                 ),
+                const SizedBox(height: 2),
                 Text(
                   'Teknisi${fieldLabel != null ? ' \u2022 $fieldLabel' : ''}',
                   style: const TextStyle(
@@ -438,36 +504,6 @@ class _TechnicianCard extends StatelessWidget {
               ],
             ),
           ),
-          if (phone != null && phone.isNotEmpty)
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: AppColors.cardBorder),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: TextButton.icon(
-                onPressed: null,
-                icon: const Icon(
-                  Icons.phone_outlined,
-                  size: 14,
-                  color: AppColors.textSecondary,
-                ),
-                label: const Text(
-                  'Hubungi',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -481,6 +517,66 @@ class _TechnicianCard extends StatelessWidget {
       'fixed': 'Selesai Diperbaiki',
     };
     return status != null ? map[status] : null;
+  }
+}
+
+class _InitialDescription extends StatelessWidget {
+  final String body;
+  const _InitialDescription({required this.body});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.cardBorder),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 26,
+                  height: 26,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Icon(
+                    Icons.description_outlined,
+                    size: 14,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Deskripsi',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              body,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textPrimary,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -503,10 +599,9 @@ class _MessageBubble extends StatelessWidget {
       alignment: isFromCustomer ? Alignment.centerRight : Alignment.centerLeft,
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
+          maxWidth: MediaQuery.of(context).size.width * 0.78,
         ),
         child: Container(
-          margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: isFromCustomer ? AppColors.primary : Colors.white,
@@ -521,35 +616,50 @@ class _MessageBubble extends StatelessWidget {
             border: isFromCustomer
                 ? null
                 : Border.all(color: AppColors.cardBorder),
+            boxShadow: [
+              BoxShadow(
+                color: isFromCustomer
+                    ? AppColors.primary.withValues(alpha: 0.15)
+                    : Colors.black.withValues(alpha: 0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (!isFromCustomer)
-                Text(
-                  senderName,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
-                    color: AppColors.primary,
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    senderName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 11,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
-              const SizedBox(height: 2),
               Text(
                 body,
                 style: TextStyle(
                   color: isFromCustomer ? Colors.white : AppColors.textPrimary,
                   fontSize: 14,
+                  height: 1.4,
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
-                time,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: isFromCustomer
-                      ? Colors.white60
-                      : AppColors.textSecondary,
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  time,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isFromCustomer
+                        ? Colors.white.withValues(alpha: 0.7)
+                        : AppColors.textSecondary,
+                  ),
                 ),
               ),
             ],
@@ -560,7 +670,7 @@ class _MessageBubble extends StatelessWidget {
   }
 }
 
-class _ReplyInput extends StatelessWidget {
+class _ReplyInput extends StatefulWidget {
   final TextEditingController controller;
   final bool submitting;
   final VoidCallback onSend;
@@ -572,40 +682,66 @@ class _ReplyInput extends StatelessWidget {
   });
 
   @override
+  State<_ReplyInput> createState() => _ReplyInputState();
+}
+
+class _ReplyInputState extends State<_ReplyInput> {
+  bool _hasText = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() {
+    final has = widget.controller.text.isNotEmpty;
+    if (has != _hasText) setState(() => _hasText = has);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onTextChanged);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: const BoxDecoration(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.divider)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
       ),
       child: SafeArea(
         child: Row(
           children: [
             Expanded(
               child: TextField(
-                controller: controller,
+                controller: widget.controller,
                 maxLines: 3,
                 minLines: 1,
+                textCapitalization: TextCapitalization.sentences,
                 decoration: InputDecoration(
                   hintText: 'Tulis balasan...',
+                  hintStyle: TextStyle(
+                    color: AppColors.textSecondary.withValues(alpha: 0.6),
+                    fontSize: 14,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
-                    borderSide: const BorderSide(color: AppColors.cardBorder),
+                    borderSide: BorderSide.none,
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: const BorderSide(color: AppColors.cardBorder),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: const BorderSide(
-                      color: AppColors.primary,
-                      width: 1.5,
-                    ),
-                  ),
+                  filled: true,
+                  fillColor: AppColors.background,
                   contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
+                    horizontal: 18,
                     vertical: 10,
                   ),
                   isDense: true,
@@ -613,21 +749,43 @@ class _ReplyInput extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            submitting
-                ? const SizedBox(
+            widget.submitting
+                ? Container(
                     width: 40,
                     height: 40,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation(AppColors.primary),
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Center(
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      ),
                     ),
                   )
-                : IconButton(
-                    onPressed: onSend,
-                    icon: const Icon(Icons.send),
-                    color: AppColors.primary,
-                    style: IconButton.styleFrom(
-                      backgroundColor: AppColors.primary.withOpacity(0.1),
+                : GestureDetector(
+                    onTap: _hasText ? widget.onSend : null,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: _hasText
+                            ? AppColors.primary
+                            : AppColors.primary.withValues(alpha: 0.3),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.send_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     ),
                   ),
           ],

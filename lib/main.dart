@@ -47,7 +47,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ComplaintProvider(apiService)),
         ChangeNotifierProvider(create: (_) => NotificationProvider(apiService)),
       ],
-      child: const MySimtekApp(),
+      child: const OfaApp(),
     ),
   );
 }

@@ -40,7 +40,12 @@ class AuthProvider extends ChangeNotifier {
       _user = UserModel.fromJson(userData);
       _status = AuthStatus.authenticated;
       // Sync FCM token now that the user is authenticated
-      FcmService.syncToken().ignore();
+      try {
+        await FcmService.syncToken();
+      } catch (e) {
+        debugPrint('[Auth] FCM token sync failed on checkAuth: $e');
+        // Don't fail auth check if FCM sync fails
+      }
     } catch (_) {
       await _storage.clearAll();
       _status = AuthStatus.unauthenticated;
@@ -53,10 +58,31 @@ class AuthProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      final res = await _api.post(ApiConstants.login, {
+      // Request notification permission first (Android 13+)
+      await FcmService.requestPermission();
+
+      // Get FCM token with retries (token may not be immediately available after permission grant)
+      String? fcmToken;
+      for (int attempt = 1; attempt <= 3; attempt++) {
+        try {
+          fcmToken = await FcmService.getToken();
+        } catch (e) {
+          debugPrint('[Auth] Attempt $attempt: Cannot fetch FCM token: $e');
+        }
+        if (fcmToken != null) break;
+        debugPrint('[Auth] Attempt $attempt: FCM token is null, retrying...');
+        if (attempt < 3) {
+          await Future.delayed(Duration(seconds: 2 * attempt));
+        }
+      }
+
+      final loginBody = {
         'email': email,
         'password': password,
-      }, auth: false);
+        'device_name': 'Mobile_App',
+        if (fcmToken != null) 'fcm_token': fcmToken,
+      };
+      final res = await _api.post(ApiConstants.login, loginBody, auth: false);
       final token = res['token']?.toString() ?? '';
       final user = UserModel.fromJson(res['user'] as Map<String, dynamic>);
       final role = user.role.toLowerCase().trim();
@@ -74,7 +100,12 @@ class AuthProvider extends ChangeNotifier {
       _status = AuthStatus.authenticated;
       notifyListeners();
       // Sync FCM token after successful login
-      FcmService.syncToken().ignore();
+      try {
+        await FcmService.syncToken();
+      } catch (e) {
+        debugPrint('[Auth] FCM token sync failed after login: $e');
+        // Don't fail login if FCM sync fails, but log the error
+      }
       return true;
     } on ApiException catch (e) {
       _error = e.message;

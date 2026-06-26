@@ -1,7 +1,7 @@
 name: mysimtek
-description: "MySimtek Mobile"
+description: "OFA Mobile"
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.5.0+2
 
 environment:
   sdk: ^3.10.8
@@ -40,9 +40,9 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/logo/mysimtek.png" # Path ke file gambar kamu
-  adaptive_icon_background: "#FFFFFF" # Opsional untuk Android Adaptive Icon
-  adaptive_icon_foreground: "assets/logo/mysimtek.png" # Opsional
+  image_path: "assets/icon/icon_ofa_pelanggan.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icon/icon_ofa_pelanggan_adaptive.png"
 
 flutter:
   uses-material-design: true
