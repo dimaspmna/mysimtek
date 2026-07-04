@@ -7,6 +7,8 @@ class UserModel {
   final String? address;
   final String? customerNumber;
   final String? packageName;
+  final String? paymentMethod;
+  final String? customerStatus;
 
   const UserModel({
     required this.id,
@@ -17,6 +19,8 @@ class UserModel {
     this.address,
     this.customerNumber,
     this.packageName,
+    this.paymentMethod,
+    this.customerStatus,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
@@ -29,5 +33,7 @@ class UserModel {
     customerNumber: (json['customer_number'] ?? json['no_pelanggan'])
         ?.toString(),
     packageName: (json['package_name'] ?? json['paket'])?.toString(),
+    paymentMethod: json['payment_method']?.toString(),
+    customerStatus: json['customer_status']?.toString(),
   );
 }

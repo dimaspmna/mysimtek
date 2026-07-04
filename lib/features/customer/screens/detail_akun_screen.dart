@@ -1,10 +1,87 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/constants/api_constants.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/services/api_service.dart';
 
-class DetailAkunScreen extends StatelessWidget {
+class DetailAkunScreen extends StatefulWidget {
   const DetailAkunScreen({super.key});
+
+  @override
+  State<DetailAkunScreen> createState() => _DetailAkunScreenState();
+}
+
+class _DetailAkunScreenState extends State<DetailAkunScreen> {
+  String? _address;
+  String? _paymentMethod;
+  String? _customerStatus;
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      final res = await context.read<ApiService>().get(
+        ApiConstants.customerProfile,
+      );
+      final customer = res['customer'] as Map<String, dynamic>?;
+      if (customer != null && mounted) {
+        setState(() {
+          _address = customer['address']?.toString();
+          _paymentMethod = customer['payment_method']?.toString();
+          _customerStatus = customer['customer_status']?.toString();
+          _loading = false;
+        });
+      } else if (mounted) {
+        setState(() => _loading = false);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  String _statusLabel(String? status) {
+    switch (status) {
+      case 'active':
+        return 'Aktif';
+      case 'new':
+        return 'Pasang Baru';
+      case 'not_installed':
+        return 'Belum Dipasang';
+      case 'survey':
+        return 'Survey';
+      case 'failed_install':
+        return 'Gagal Pasang';
+      case 'terminated':
+        return 'Diputus';
+      default:
+        return status ?? '-';
+    }
+  }
+
+  String _paymentLabel(String? method) {
+    switch (method) {
+      case 'manual':
+        return 'Manual (Transfer)';
+      case 'midtrans':
+        return 'Online (Midtrans)';
+      case 'briva':
+        return 'BRIVA';
+      default:
+        return method ?? '-';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,53 +152,106 @@ class DetailAkunScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          Card(
-            elevation: 0,
-            margin: EdgeInsets.zero,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: AppColors.cardBorder),
+          if (_loading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 32),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else ...[
+            Card(
+              elevation: 0,
+              margin: EdgeInsets.zero,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: AppColors.cardBorder),
+              ),
+              child: Column(
+                children: [
+                  _infoTile(
+                    icon: Icons.email_outlined,
+                    label: 'Email',
+                    value: user.email,
+                    bgColor: const Color(0xFF5C6BC0),
+                    isFirst: true,
+                  ),
+                  if (user.phone != null) ...[
+                    _divider(),
+                    _infoTile(
+                      icon: Icons.phone_outlined,
+                      label: 'No HP',
+                      value: user.phone!,
+                      bgColor: const Color(0xFF43A047),
+                    ),
+                  ],
+                  if (user.customerNumber != null) ...[
+                    _divider(),
+                    _infoTile(
+                      icon: Icons.badge_outlined,
+                      label: 'No Pelanggan',
+                      value: user.customerNumber!,
+                      bgColor: const Color(0xFFFF8F00),
+                    ),
+                  ],
+                  if (_address != null) ...[
+                    _divider(),
+                    _infoTile(
+                      icon: Icons.location_on_outlined,
+                      label: 'Alamat Rumah',
+                      value: _address!,
+                      bgColor: const Color(0xFFE53935),
+                    ),
+                  ],
+                  if (_paymentMethod != null) ...[
+                    _divider(),
+                    _infoTile(
+                      icon: Icons.payment_outlined,
+                      label: 'Metode Pembayaran',
+                      value: _paymentLabel(_paymentMethod),
+                      bgColor: const Color(0xFF7B1FA2),
+                    ),
+                  ],
+                  if (_customerStatus != null) ...[
+                    _divider(),
+                    _infoTile(
+                      icon: Icons.account_circle_outlined,
+                      label: 'Status Customer',
+                      value: _statusLabel(_customerStatus),
+                      bgColor: const Color(0xFF00897B),
+                      isLast: true,
+                    ),
+                  ],
+                ],
+              ),
             ),
-            child: Column(
-              children: [
-                _infoTile(
-                  icon: Icons.email_outlined,
-                  label: 'Email',
-                  value: user.email,
-                  bgColor: const Color(0xFF5C6BC0),
-                  isFirst: true,
+            if (_error != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: AppColors.error.withValues(alpha: 0.4),
+                  ),
                 ),
-                if (user.phone != null) ...[
-                  _divider(),
-                  _infoTile(
-                    icon: Icons.phone_outlined,
-                    label: 'No HP',
-                    value: user.phone!,
-                    bgColor: const Color(0xFF43A047),
-                  ),
-                ],
-                if (user.customerNumber != null) ...[
-                  _divider(),
-                  _infoTile(
-                    icon: Icons.badge_outlined,
-                    label: 'No Pelanggan',
-                    value: user.customerNumber!,
-                    bgColor: const Color(0xFFFF8F00),
-                  ),
-                ],
-                if (user.address != null) ...[
-                  _divider(),
-                  _infoTile(
-                    icon: Icons.location_on_outlined,
-                    label: 'Alamat',
-                    value: user.address!,
-                    bgColor: const Color(0xFFE53935),
-                    isLast: true,
-                  ),
-                ],
-              ],
-            ),
-          ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline, color: AppColors.error, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Gagal memuat data profil',
+                        style: const TextStyle(
+                          color: AppColors.error,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
         ],
       ),
     );

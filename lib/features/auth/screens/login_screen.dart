@@ -1,10 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_about.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_version.dart';
+import '../../../core/constants/whatsapp_admin.dart';
 import '../../../core/providers/auth_provider.dart';
-import 'request_access_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,25 +16,110 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
+enum _LoginMode { password, otp }
+
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _otpCtrl = TextEditingController();
+  Timer? _resendTimer;
+  int _resendSeconds = 0;
   bool _obscure = true;
+  bool _otpRequested = false;
+  _LoginMode _loginMode = _LoginMode.password;
 
   @override
   void dispose() {
+    _resendTimer?.cancel();
     _emailCtrl.dispose();
     _passCtrl.dispose();
+    _phoneCtrl.dispose();
+    _otpCtrl.dispose();
     super.dispose();
   }
 
+  void _startResendCountdown() {
+    _resendTimer?.cancel();
+    setState(() {
+      _resendSeconds = 30;
+    });
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_resendSeconds <= 1) {
+        timer.cancel();
+        setState(() => _resendSeconds = 0);
+        return;
+      }
+      setState(() => _resendSeconds -= 1);
+    });
+  }
+
+  bool get _canResendOtp => _otpRequested && _resendSeconds == 0;
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    await context.read<AuthProvider>().login(
-      _emailCtrl.text.trim(),
-      _passCtrl.text,
+    final auth = context.read<AuthProvider>();
+
+    if (_loginMode == _LoginMode.password) {
+      await auth.login(_emailCtrl.text.trim(), _passCtrl.text);
+      return;
+    }
+
+    final phone = _phoneCtrl.text.trim();
+    if (!_otpRequested) {
+      final error = await auth.requestOtp(phone);
+      if (!mounted) return;
+      if (error == null) {
+        setState(() {
+          _otpRequested = true;
+        });
+        _startResendCountdown();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Kode OTP telah dikirim. Periksa WhatsApp Anda.'),
+            backgroundColor: Color(0xFF0F766E),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), backgroundColor: Color(0xFFDC2626)),
+        );
+      }
+      return;
+    }
+
+    final success = await auth.loginWithOtp(phone, _otpCtrl.text.trim());
+    if (!mounted) return;
+    if (!success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(auth.error ?? 'Login OTP gagal.'),
+          backgroundColor: Color(0xFFDC2626),
+        ),
+      );
+    }
+  }
+
+  Future<void> _openWhatsAppHelp() async {
+    final message = Uri.encodeComponent(
+      'Halo, saya mengalami kendala saat masuk ke aplikasi OFA Mobile. Mohon bantuannya.',
     );
+    final uri = Uri.parse(
+      'https://wa.me/${WhatsappAdmin.helpdesk}?text=$message',
+    );
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('WhatsApp tidak dapat dibuka.'),
+          backgroundColor: Color(0xFFDC2626),
+        ),
+      );
+    }
   }
 
   void _showAppAbout() {
@@ -218,22 +306,36 @@ class _LoginScreenState extends State<LoginScreen> {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         actions: [
-          TextButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const RequestAccessScreen(),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Material(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: _openWhatsAppHelp,
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.headset_mic_outlined,
+                        color: AppColors.primary,
+                        size: 18,
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        'Bantuan',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              );
-            },
-            icon: const Icon(Icons.vpn_key_outlined, size: 16),
-            label: const Text('Dapatkan Akses Masuk'),
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.primary,
-              textStyle: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -268,60 +370,342 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 40),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _tabButton(
+                        label: 'Email / Password',
+                        icon: Icons.email_outlined,
+                        isActive: _loginMode == _LoginMode.password,
+                        onTap: () => setState(() {
+                          _loginMode = _LoginMode.password;
+                          _otpRequested = false;
+                          _otpCtrl.clear();
+                          _resendTimer?.cancel();
+                          _resendSeconds = 0;
+                        }),
+                      ),
+                    ),
+                    Expanded(
+                      child: _tabButton(
+                        label: 'WhatsApp OTP',
+                        icon: Icons.message_outlined,
+                        isActive: _loginMode == _LoginMode.otp,
+                        onTap: () => setState(() {
+                          _loginMode = _LoginMode.otp;
+                          _otpRequested = false;
+                          _otpCtrl.clear();
+                          _resendTimer?.cancel();
+                          _resendSeconds = 0;
+                        }),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
                 Form(
                   key: _formKey,
                   child: Column(
                     children: [
-                      TextFormField(
-                        controller: _emailCtrl,
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
-                        style: const TextStyle(fontSize: 13),
-                        decoration: _inputDecoration(
-                          label: 'Email',
-                          prefix: const Icon(
-                            Icons.person_outline,
-                            size: 18,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) {
-                            return 'Email wajib diisi';
-                          }
-                          if (!v.contains('@')) return 'Email tidak valid';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _passCtrl,
-                        obscureText: _obscure,
-                        textInputAction: TextInputAction.done,
-                        onFieldSubmitted: (_) => _submit(),
-                        style: const TextStyle(fontSize: 13),
-                        decoration: _inputDecoration(
-                          label: 'Kata Sandi',
-                          prefix: const Icon(
-                            Icons.lock_outline,
-                            size: 18,
-                            color: AppColors.textSecondary,
-                          ),
-                          suffix: IconButton(
-                            icon: Icon(
-                              _obscure
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
+                      if (_loginMode == _LoginMode.password) ...[
+                        TextFormField(
+                          controller: _emailCtrl,
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          style: const TextStyle(fontSize: 13),
+                          decoration: _inputDecoration(
+                            label: 'Email',
+                            prefix: const Icon(
+                              Icons.person_outline,
+                              size: 18,
                               color: AppColors.textSecondary,
                             ),
-                            onPressed: () =>
-                                setState(() => _obscure = !_obscure),
                           ),
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) {
+                              return 'Email wajib diisi';
+                            }
+                            if (!v.contains('@')) return 'Email tidak valid';
+                            return null;
+                          },
                         ),
-                        validator: (v) => (v == null || v.isEmpty)
-                            ? 'Kata Sandi wajib diisi'
-                            : null,
-                      ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _passCtrl,
+                          obscureText: _obscure,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) => _submit(),
+                          style: const TextStyle(fontSize: 13),
+                          decoration: _inputDecoration(
+                            label: 'Kata Sandi',
+                            prefix: const Icon(
+                              Icons.lock_outline,
+                              size: 18,
+                              color: AppColors.textSecondary,
+                            ),
+                            suffix: IconButton(
+                              icon: Icon(
+                                _obscure
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                                color: AppColors.textSecondary,
+                              ),
+                              onPressed: () =>
+                                  setState(() => _obscure = !_obscure),
+                            ),
+                          ),
+                          validator: (v) => (v == null || v.isEmpty)
+                              ? 'Kata Sandi wajib diisi'
+                              : null,
+                        ),
+                      ] else ...[
+                        TextFormField(
+                          controller: _phoneCtrl,
+                          keyboardType: TextInputType.phone,
+                          textInputAction: TextInputAction.next,
+                          onFieldSubmitted: (_) => _submit(),
+                          style: const TextStyle(fontSize: 13),
+                          decoration: _inputDecoration(
+                            label: 'Nomor Telepon',
+                            prefix: const Icon(
+                              Icons.phone_outlined,
+                              size: 18,
+                              color: AppColors.textSecondary,
+                            ),
+                            hintText: '0812xxxxxxx',
+                          ),
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) {
+                              return 'Nomor telepon wajib diisi';
+                            }
+                            if (v.trim().length < 10) {
+                              return 'Nomor telepon tidak valid';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        if (_loginMode == _LoginMode.otp) ...[
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 200),
+                            child: isLoading
+                                ? Container(
+                                    key: const ValueKey('otp-loading'),
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withOpacity(
+                                        0.16,
+                                      ),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            _otpRequested
+                                                ? 'Memverifikasi kode OTP…'
+                                                : 'Mengirim kode OTP…',
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : _otpRequested
+                                ? Container(
+                                    key: const ValueKey('otp-sent'),
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withOpacity(
+                                        0.12,
+                                      ),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Row(
+                                      children: const [
+                                        Icon(
+                                          Icons.check_circle_outline,
+                                          size: 18,
+                                          color: AppColors.primary,
+                                        ),
+                                        SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(
+                                            'Kode OTP telah dikirim. Silakan masukkan kode di bawah.',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                        if (_otpRequested) ...[
+                          TextFormField(
+                            controller: _otpCtrl,
+                            keyboardType: TextInputType.number,
+                            textInputAction: TextInputAction.done,
+                            onFieldSubmitted: (_) => _submit(),
+                            style: const TextStyle(fontSize: 13),
+                            decoration: _inputDecoration(
+                              label: 'Kode OTP',
+                              prefix: const Icon(
+                                Icons.lock_clock_outlined,
+                                size: 18,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) {
+                                return 'Kode OTP wajib diisi';
+                              }
+                              if (v.trim().length < 4) {
+                                return 'Kode OTP tidak valid';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 10),
+                          if (_loginMode == _LoginMode.otp &&
+                              errorMsg != null) ...[
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.error.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: AppColors.error.withOpacity(0.4),
+                                ),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(
+                                    Icons.error_outline,
+                                    color: AppColors.error,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      errorMsg,
+                                      style: const TextStyle(
+                                        color: AppColors.error,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Masukkan kode OTP yang dikirim ke WhatsApp Anda.',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _resendSeconds > 0
+                                          ? 'Kirim ulang dalam $_resendSeconds detik'
+                                          : 'Anda bisa kirim ulang kode OTP sekarang.',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: _canResendOtp
+                                    ? () async {
+                                        final phone = _phoneCtrl.text.trim();
+                                        final messenger = ScaffoldMessenger.of(
+                                          context,
+                                        );
+                                        final error = await auth.requestOtp(
+                                          phone,
+                                        );
+                                        if (!mounted) return;
+                                        if (error == null) {
+                                          _startResendCountdown();
+                                          messenger.showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                'Kode OTP baru telah dikirim.',
+                                              ),
+                                              backgroundColor: Color(
+                                                0xFF0F766E,
+                                              ),
+                                            ),
+                                          );
+                                        } else {
+                                          messenger.showSnackBar(
+                                            SnackBar(
+                                              content: Text(error),
+                                              backgroundColor: Color(
+                                                0xFFDC2626,
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    : null,
+                                style: TextButton.styleFrom(
+                                  foregroundColor: AppColors.primary,
+                                  textStyle: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                child: const Text('Kirim Ulang'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
                       if (errorMsg != null) ...[
                         const SizedBox(height: 16),
                         Container(
@@ -448,13 +832,57 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  Widget _tabButton({
+    required String label,
+    required IconData icon,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: isActive ? AppColors.primary : Colors.transparent,
+              width: 2,
+            ),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isActive ? AppColors.primary : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                color: isActive ? AppColors.primary : AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   InputDecoration _inputDecoration({
     required String label,
+    String? hintText,
     Widget? prefix,
     Widget? suffix,
   }) {
     return InputDecoration(
       labelText: label,
+      hintText: hintText,
       labelStyle: const TextStyle(fontSize: 13),
       prefixIcon: prefix,
       suffixIcon: suffix,

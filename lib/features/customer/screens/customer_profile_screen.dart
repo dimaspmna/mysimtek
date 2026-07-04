@@ -4,7 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_about.dart';
 import '../../../core/constants/app_version.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/whatsapp_admin.dart';
+import '../../../core/constants/whatsapp_help.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/widgets/app_loading.dart';
 import '../../../core/widgets/app_webview.dart';
@@ -19,8 +19,6 @@ class CustomerProfileScreen extends StatefulWidget {
 }
 
 class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
-  bool _isLoggingOut = false;
-
   static Future<void> _launchWA(String number, String message) async {
     final uri = Uri.parse(
       'https://wa.me/$number?text=${Uri.encodeComponent(message)}',
@@ -318,18 +316,6 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'BANTUAN',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
@@ -341,152 +327,27 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                     clipBehavior: Clip.antiAlias,
                     child: Column(
                       children: [
-                        InkWell(
+                        _menuTile(
+                          icon: Icons.headset_mic_outlined,
+                          label: 'Bantuan Aplikasi',
+                          bgColor: const Color(0xFF1E88E5),
                           onTap: () => _launchWA(
-                            WhatsappAdmin.billing,
-                            'Halo admin, saya ${user.name} ingin bertanya mengenai kendala tagihan/pembayaran.\n\n[pesan ini dari Aplikasi OFA - Pelanggan]',
+                            WhatsappHelp.helpdesk,
+                            'Hallo Tim IT Cogline, saya ${user.name} terkendala terkait penggunaan aplikasi OFA Mobile. Mohon bantuannya ya.',
                           ),
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(12),
-                          ),
-                          splashColor: AppColors.textSecondary.withOpacity(
-                            0.08,
-                          ),
-                          highlightColor: AppColors.textSecondary.withOpacity(
-                            0.04,
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 14,
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF00897B),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Icon(
-                                    Icons.support_agent_outlined,
-                                    color: Colors.white,
-                                    size: 16,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                const Expanded(
-                                  child: Text(
-                                    'Admin Pembayaran',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                ),
-                                const Icon(
-                                  Icons.chevron_right,
-                                  color: AppColors.textSecondary,
-                                  size: 20,
-                                ),
-                              ],
-                            ),
-                          ),
+                          isFirst: true,
                         ),
                         const Divider(height: 1, color: AppColors.cardBorder),
-                        InkWell(
-                          onTap: () => _launchWA(
-                            WhatsappAdmin.support,
-                            'Halo admin support, saya ${user.name} ingin melaporkan kendala jaringan/gangguan.\n\n[pesan ini dari Aplikasi OFA - Pelanggan]',
-                          ),
-                          borderRadius: const BorderRadius.vertical(
-                            bottom: Radius.circular(12),
-                          ),
-                          splashColor: AppColors.textSecondary.withOpacity(
-                            0.08,
-                          ),
-                          highlightColor: AppColors.textSecondary.withOpacity(
-                            0.04,
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 14,
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF1E88E5),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Icon(
-                                    Icons.support_agent_outlined,
-                                    color: Colors.white,
-                                    size: 16,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                const Expanded(
-                                  child: Text(
-                                    'Admin NOC 24 Jam',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                ),
-                                const Icon(
-                                  Icons.chevron_right,
-                                  color: AppColors.textSecondary,
-                                  size: 20,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'LAINNYA',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.cardBorder),
-                  ),
-                  child: Material(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    clipBehavior: Clip.antiAlias,
-                    child: Column(
-                      children: [
                         _menuTile(
                           icon: Icons.info_outline,
                           label: 'Tentang Aplikasi',
                           bgColor: const Color(0xFFFF6B00),
                           onTap: () => _showTentangAplikasi(context),
-                          isFirst: true,
                         ),
                         const Divider(height: 1, color: AppColors.cardBorder),
                         _menuTile(
                           icon: Icons.lock_outline,
-                          label: 'Ganti Kata Sandi',
+                          label: 'Reset Kata Sandi',
                           bgColor: const Color(0xFF00897B),
                           onTap: () => Navigator.push(
                             context,
@@ -526,169 +387,139 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                             ),
                           ),
                         ),
-                        // const Divider(height: 1, color: AppColors.cardBorder),
-                        // _menuTile(
-                        //   icon: Icons.system_security_update_outlined,
-                        //   label: 'Update Aplikasi',
-                        //   bgColor: const Color(0xFF039BE5),
-                        //   onTap: () => launchUrl(
-                        //     Uri.parse(
-                        //       'https://play.google.com/store/apps/details?id=com.example.mysimtek',
-                        //     ),
-                        //     mode: LaunchMode.externalApplication,
-                        //   ),
-                        //   isLast: true,
-                        // ),
+                        const Divider(height: 1, color: AppColors.cardBorder),
+                        _menuTile(
+                          icon: Icons.logout,
+                          label: 'Keluar',
+                          bgColor: const Color(0xFFDC2626),
+                          onTap: () async {
+                            final confirm = await showModalBottomSheet<bool>(
+                              context: context,
+                              backgroundColor: Colors.white,
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(20),
+                                ),
+                              ),
+                              builder: (ctx) => Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  24,
+                                  20,
+                                  24,
+                                  32,
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 40,
+                                      height: 4,
+                                      decoration: BoxDecoration(
+                                        color: const Color.fromARGB(
+                                          255,
+                                          200,
+                                          200,
+                                          200,
+                                        ),
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
+                                    const Icon(
+                                      Icons.logout,
+                                      size: 40,
+                                      color: AppColors.error,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    const Text(
+                                      'Konfirmasi Keluar',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    const Text(
+                                      'Anda yakin ingin keluar dari akun?',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 24),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: ElevatedButton(
+                                            onPressed: () =>
+                                                Navigator.pop(ctx, false),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.white,
+                                              foregroundColor:
+                                                  AppColors.textPrimary,
+                                              minimumSize: const Size(
+                                                double.infinity,
+                                                48,
+                                              ),
+                                              elevation: 2,
+                                              shadowColor: Colors.black
+                                                  .withValues(alpha: 0.15),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                side: const BorderSide(
+                                                  color: Color(0xFFE2E8F0),
+                                                  width: 1,
+                                                ),
+                                              ),
+                                            ),
+                                            child: const Text('Batal'),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: ElevatedButton(
+                                            onPressed: () =>
+                                                Navigator.pop(ctx, true),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: AppColors.error,
+                                              foregroundColor: Colors.white,
+                                              minimumSize: const Size(
+                                                double.infinity,
+                                                48,
+                                              ),
+                                              elevation: 3,
+                                              shadowColor: AppColors.error
+                                                  .withValues(alpha: 0.4),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                side: const BorderSide(
+                                                  color: Color(0xFFDC2626),
+                                                  width: 1,
+                                                ),
+                                              ),
+                                            ),
+                                            child: const Text('Keluar'),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                            if (confirm == true && context.mounted) {
+                              await context.read<AuthProvider>().logout();
+                            }
+                          },
+                          isLast: true,
+                        ),
                       ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: _isLoggingOut
-                      ? null
-                      : () async {
-                          final confirm = await showModalBottomSheet<bool>(
-                            context: context,
-                            backgroundColor: Colors.white,
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.vertical(
-                                top: Radius.circular(20),
-                              ),
-                            ),
-                            builder: (ctx) => Padding(
-                              padding: const EdgeInsets.fromLTRB(
-                                24,
-                                20,
-                                24,
-                                32,
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 40,
-                                    height: 4,
-                                    decoration: BoxDecoration(
-                                      color: const Color.fromARGB(
-                                        255,
-                                        200,
-                                        200,
-                                        200,
-                                      ),
-                                      borderRadius: BorderRadius.circular(2),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  const Icon(
-                                    Icons.logout,
-                                    size: 40,
-                                    color: AppColors.error,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  const Text(
-                                    'Konfirmasi Keluar',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  const Text(
-                                    'Anda yakin ingin keluar dari akun?',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 24),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: ElevatedButton(
-                                          onPressed: () =>
-                                              Navigator.pop(ctx, false),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.white,
-                                            foregroundColor:
-                                                AppColors.textPrimary,
-                                            minimumSize: const Size(
-                                              double.infinity,
-                                              48,
-                                            ),
-                                            elevation: 2,
-                                            shadowColor: Colors.black
-                                                .withValues(alpha: 0.15),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                              side: const BorderSide(
-                                                color: Color(0xFFE2E8F0),
-                                                width: 1,
-                                              ),
-                                            ),
-                                          ),
-                                          child: const Text('Batal'),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: ElevatedButton(
-                                          onPressed: () =>
-                                              Navigator.pop(ctx, true),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: AppColors.error,
-                                            foregroundColor: Colors.white,
-                                            minimumSize: const Size(
-                                              double.infinity,
-                                              48,
-                                            ),
-                                            elevation: 3,
-                                            shadowColor: AppColors.error
-                                                .withValues(alpha: 0.4),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                              side: const BorderSide(
-                                                color: Color(0xFFDC2626),
-                                                width: 1,
-                                              ),
-                                            ),
-                                          ),
-                                          child: const Text('Keluar'),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                          if (confirm == true && context.mounted) {
-                            setState(() => _isLoggingOut = true);
-                            await context.read<AuthProvider>().logout();
-                          }
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.error,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: _isLoggingOut
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text('Keluar'),
                 ),
                 const SizedBox(height: 24),
                 // Footer
