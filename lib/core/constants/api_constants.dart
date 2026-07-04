@@ -10,6 +10,8 @@ class ApiConstants {
 
   // Auth
   static const String login = '/login';
+  static const String otpRequest = '/login/otp-request';
+  static const String otpVerify = '/login/otp-verify';
   static const String logout = '/logout';
   static const String me = '/me';
   static const String fcmTokenUpdate = '/fcm-token';

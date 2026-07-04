@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../constants/api_constants.dart';
 import '../models/user_model.dart';
@@ -53,35 +55,49 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<Map<String, dynamic>> _prepareLoginPayload() async {
+    // Request notification permission first (Android 13+)
+    await FcmService.requestPermission();
+
+    // Get FCM token with retries (token may not be immediately available after permission grant)
+    String? fcmToken;
+    for (int attempt = 1; attempt <= 3; attempt++) {
+      try {
+        fcmToken = await FcmService.getToken();
+      } catch (e) {
+        debugPrint('[Auth] Attempt $attempt: Cannot fetch FCM token: $e');
+      }
+      if (fcmToken != null) break;
+      debugPrint('[Auth] Attempt $attempt: FCM token is null, retrying...');
+      if (attempt < 3) {
+        await Future.delayed(Duration(seconds: 2 * attempt));
+      }
+    }
+
+    if (fcmToken == null) {
+      try {
+        fcmToken = await FcmService.waitForToken(
+          timeout: const Duration(seconds: 10),
+        );
+        debugPrint('[Auth] FCM token received from refresh event: $fcmToken');
+      } catch (e) {
+        debugPrint('[Auth] FCM token refresh fallback failed: $e');
+      }
+    }
+
+    return {
+      'device_name': 'Mobile_App',
+      if (fcmToken != null) 'fcm_token': fcmToken,
+    };
+  }
+
   Future<bool> login(String email, String password) async {
     _status = AuthStatus.loading;
     _error = null;
     notifyListeners();
     try {
-      // Request notification permission first (Android 13+)
-      await FcmService.requestPermission();
-
-      // Get FCM token with retries (token may not be immediately available after permission grant)
-      String? fcmToken;
-      for (int attempt = 1; attempt <= 3; attempt++) {
-        try {
-          fcmToken = await FcmService.getToken();
-        } catch (e) {
-          debugPrint('[Auth] Attempt $attempt: Cannot fetch FCM token: $e');
-        }
-        if (fcmToken != null) break;
-        debugPrint('[Auth] Attempt $attempt: FCM token is null, retrying...');
-        if (attempt < 3) {
-          await Future.delayed(Duration(seconds: 2 * attempt));
-        }
-      }
-
-      final loginBody = {
-        'email': email,
-        'password': password,
-        'device_name': 'Mobile_App',
-        if (fcmToken != null) 'fcm_token': fcmToken,
-      };
+      final loginPayload = await _prepareLoginPayload();
+      final loginBody = {'email': email, 'password': password, ...loginPayload};
       final res = await _api.post(ApiConstants.login, loginBody, auth: false);
       final token = res['token']?.toString() ?? '';
       final user = UserModel.fromJson(res['user'] as Map<String, dynamic>);
@@ -104,7 +120,78 @@ class AuthProvider extends ChangeNotifier {
         await FcmService.syncToken();
       } catch (e) {
         debugPrint('[Auth] FCM token sync failed after login: $e');
-        // Don't fail login if FCM sync fails, but log the error
+      }
+      return true;
+    } on ApiException catch (e) {
+      _error = e.message;
+      _status = AuthStatus.unauthenticated;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = 'Terjadi kesalahan tidak terduga. Coba lagi.';
+      _status = AuthStatus.unauthenticated;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<String?> requestOtp(String phone) async {
+    _status = AuthStatus.loading;
+    _error = null;
+    notifyListeners();
+    try {
+      final payload = await _prepareLoginPayload();
+      await _api.post(ApiConstants.otpRequest, {
+        'phone': phone,
+        ...payload,
+      }, auth: false);
+      _status = AuthStatus.unauthenticated;
+      notifyListeners();
+      return null;
+    } on ApiException catch (e) {
+      _error = e.message;
+      _status = AuthStatus.unauthenticated;
+      notifyListeners();
+      return _error;
+    } catch (e) {
+      _error = 'Terjadi kesalahan tidak terduga. Coba lagi.';
+      _status = AuthStatus.unauthenticated;
+      notifyListeners();
+      return _error;
+    }
+  }
+
+  Future<bool> loginWithOtp(String phone, String otpCode) async {
+    _status = AuthStatus.loading;
+    _error = null;
+    notifyListeners();
+    try {
+      final payload = await _prepareLoginPayload();
+      final res = await _api.post(ApiConstants.otpVerify, {
+        'phone': phone,
+        'otp_code': otpCode,
+        ...payload,
+      }, auth: false);
+      final token = res['token']?.toString() ?? '';
+      final user = UserModel.fromJson(res['user'] as Map<String, dynamic>);
+      final role = user.role.toLowerCase().trim();
+      if (role != 'customer') {
+        _error =
+            'Akun ini tidak memiliki akses ke aplikasi. '
+            'Hubungi administrator jika ini adalah kesalahan.';
+        _status = AuthStatus.unauthenticated;
+        notifyListeners();
+        return false;
+      }
+      await _storage.saveToken(token);
+      _user = user;
+      await _storage.saveRole(role);
+      _status = AuthStatus.authenticated;
+      notifyListeners();
+      try {
+        await FcmService.syncToken();
+      } catch (e) {
+        debugPrint('[Auth] FCM token sync failed after OTP login: $e');
       }
       return true;
     } on ApiException catch (e) {

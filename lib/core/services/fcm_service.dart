@@ -75,6 +75,7 @@ class FcmService {
 
   /// Cached ApiService used by token-refresh listener and syncToken.
   static ApiService? _apiService;
+  static bool _tokenSyncScheduled = false;
 
   /// Returns the current device FCM token, if available.
   static Future<String?> getToken() async {
@@ -94,7 +95,9 @@ class FcmService {
       badge: true,
       sound: true,
     );
-    debugPrint('[FCM] Runtime permission request: ${settings.authorizationStatus}');
+    debugPrint(
+      '[FCM] Runtime permission request: ${settings.authorizationStatus}',
+    );
     return settings.authorizationStatus == AuthorizationStatus.authorized;
   }
 
@@ -152,6 +155,14 @@ class FcmService {
       }
     });
 
+    // Prefetch token once during startup so it can be available later.
+    try {
+      final initialToken = await _messaging.getToken();
+      debugPrint('[FCM] Initial token after initialize: $initialToken');
+    } catch (e) {
+      debugPrint('[FCM] Failed to prefetch FCM token: $e');
+    }
+
     // Foreground message handler
     FirebaseMessaging.onMessage.listen((message) {
       debugPrint('[FCM] Foreground: ${message.notification?.title}');
@@ -201,18 +212,100 @@ class FcmService {
     for (int attempt = 1; attempt <= maxRetries; attempt++) {
       token = await _messaging.getToken();
       if (token != null) break;
-      debugPrint('[FCM] syncToken: getToken() returned null, retry $attempt/$maxRetries');
+      debugPrint(
+        '[FCM] syncToken: getToken() returned null, retry $attempt/$maxRetries',
+      );
       if (attempt < maxRetries) {
         await Future.delayed(Duration(seconds: 2 * attempt));
       }
     }
 
     if (token == null) {
-      throw Exception('Failed to get FCM token after $maxRetries attempts');
+      debugPrint(
+        '[FCM] syncToken: initial getToken() failed, waiting for token refresh event',
+      );
+      try {
+        token = await waitForToken(timeout: const Duration(seconds: 10));
+        debugPrint('[FCM] syncToken: token refresh event received');
+      } catch (e) {
+        debugPrint('[FCM] syncToken: token refresh event did not arrive: $e');
+      }
+    }
+
+    if (token == null) {
+      debugPrint('[FCM] syncToken: token still unavailable after wait');
+      _scheduleTokenSyncRetries(retries: 3, delay: const Duration(seconds: 10));
+      return;
     }
 
     debugPrint('[FCM] Syncing token after login: $token');
     await _sendTokenToServer(api, token);
+  }
+
+  static Future<String> waitForToken({required Duration timeout}) async {
+    final completer = Completer<String>();
+    final sub = _messaging.onTokenRefresh.listen(
+      (token) {
+        if (!completer.isCompleted) {
+          completer.complete(token);
+        }
+      },
+      onError: (e) {
+        if (!completer.isCompleted) {
+          completer.completeError(e);
+        }
+      },
+    );
+
+    try {
+      return await completer.future.timeout(timeout);
+    } finally {
+      await sub.cancel();
+    }
+  }
+
+  static void _scheduleTokenSyncRetries({
+    required int retries,
+    required Duration delay,
+  }) {
+    if (_tokenSyncScheduled) {
+      debugPrint(
+        '[FCM] Token sync retry already scheduled, skipping duplicate',
+      );
+      return;
+    }
+
+    _tokenSyncScheduled = true;
+    Future<void>.delayed(delay, () async {
+      try {
+        final token = await _messaging.getToken();
+        if (token != null && _apiService != null) {
+          debugPrint('[FCM] Fallback token retry found token: $token');
+          await _sendTokenToServer(_apiService!, token);
+          _tokenSyncScheduled = false;
+          return;
+        }
+
+        if (retries > 1) {
+          debugPrint(
+            '[FCM] Fallback token retry did not find a token, retrying again ($retries remaining)',
+          );
+          _tokenSyncScheduled = false;
+          _scheduleTokenSyncRetries(retries: retries - 1, delay: delay);
+        } else {
+          debugPrint('[FCM] Fallback token retries exhausted');
+          _tokenSyncScheduled = false;
+        }
+      } catch (e) {
+        debugPrint('[FCM] Fallback token retry failed: $e');
+        if (retries > 1) {
+          _tokenSyncScheduled = false;
+          _scheduleTokenSyncRetries(retries: retries - 1, delay: delay);
+        } else {
+          _tokenSyncScheduled = false;
+        }
+      }
+    });
   }
 
   static Future<void> _initLocalNotifications() async {

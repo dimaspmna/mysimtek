@@ -111,11 +111,9 @@ class ApiService {
   }
 
   Future<void> changePassword({
-    required String currentPassword,
     required String newPassword,
   }) async {
     await post(ApiConstants.changePassword, {
-      'current_password': currentPassword,
       'new_password': newPassword,
       'new_password_confirmation': newPassword,
     });

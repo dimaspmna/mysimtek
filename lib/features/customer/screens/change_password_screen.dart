@@ -3,8 +3,6 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/api_service.dart';
 
-enum _CheckState { none, loading, valid, invalid }
-
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
 
@@ -14,51 +12,17 @@ class ChangePasswordScreen extends StatefulWidget {
 
 class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _currentCtrl = TextEditingController();
   final _newCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
-  final _currentFocus = FocusNode();
 
-  bool _showCurrent = false;
   bool _showNew = false;
   bool _showConfirm = false;
   bool _loading = false;
   bool _newTouched = false;
   bool _confirmTouched = false;
-  _CheckState _checkState = _CheckState.none;
-
-  @override
-  void initState() {
-    super.initState();
-    _currentFocus.addListener(_onCurrentFocusChange);
-  }
-
-  void _onCurrentFocusChange() {
-    if (!_currentFocus.hasFocus && _currentCtrl.text.isNotEmpty) {
-      _verifyCurrentPassword();
-    }
-  }
-
-  Future<void> _verifyCurrentPassword() async {
-    final password = _currentCtrl.text;
-    if (password.isEmpty) return;
-    setState(() => _checkState = _CheckState.loading);
-    try {
-      final valid = await context.read<ApiService>().verifyPassword(password);
-      if (!mounted) return;
-      setState(
-        () => _checkState = valid ? _CheckState.valid : _CheckState.invalid,
-      );
-    } on ApiException {
-      if (mounted) setState(() => _checkState = _CheckState.none);
-    }
-  }
 
   @override
   void dispose() {
-    _currentFocus.removeListener(_onCurrentFocusChange);
-    _currentFocus.dispose();
-    _currentCtrl.dispose();
     _newCtrl.dispose();
     _confirmCtrl.dispose();
     super.dispose();
@@ -66,21 +30,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_checkState != _CheckState.valid) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Verifikasi kata sandi lama terlebih dahulu.'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
 
     setState(() => _loading = true);
     try {
       await context.read<ApiService>().changePassword(
-        currentPassword: _currentCtrl.text,
         newPassword: _newCtrl.text,
       );
       if (!mounted) return;
@@ -153,141 +106,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       ),
                     ),
                   ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              // ── Section: Kata Sandi Lama ──────────────────────────────
-              const Text(
-                'Masukkan Kata Sandi Lama',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
-                  letterSpacing: 0.3,
-                ),
-              ),
-              const SizedBox(height: 8),
-              // Form card — kata sandi lama
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.cardBorder),
-                ),
-                padding: const EdgeInsets.all(16),
-                child: TextFormField(
-                  controller: _currentCtrl,
-                  focusNode: _currentFocus,
-                  obscureText: !_showCurrent,
-                  onChanged: (_) {
-                    if (_checkState != _CheckState.none) {
-                      setState(() => _checkState = _CheckState.none);
-                    }
-                  },
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Wajib diisi';
-                    if (_checkState == _CheckState.invalid) {
-                      return 'Kata sandi lama tidak sesuai';
-                    }
-                    return null;
-                  },
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textPrimary,
-                  ),
-                  decoration: InputDecoration(
-                    labelText: 'Kata Sandi Lama',
-                    labelStyle: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: AppColors.cardBorder),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(
-                        color: _checkState == _CheckState.valid
-                            ? AppColors.success
-                            : _checkState == _CheckState.invalid
-                            ? AppColors.error
-                            : AppColors.cardBorder,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(
-                        color: _checkState == _CheckState.valid
-                            ? AppColors.success
-                            : _checkState == _CheckState.invalid
-                            ? AppColors.error
-                            : AppColors.primary,
-                        width: 1.5,
-                      ),
-                    ),
-                    helperText: _checkState == _CheckState.valid
-                        ? 'Kata sandi sesuai'
-                        : _checkState == _CheckState.invalid
-                        ? 'Kata sandi tidak sesuai'
-                        : null,
-                    helperStyle: TextStyle(
-                      fontSize: 12,
-                      color: _checkState == _CheckState.valid
-                          ? AppColors.success
-                          : AppColors.error,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                    suffixIcon: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (_checkState == _CheckState.loading)
-                          const Padding(
-                            padding: EdgeInsets.only(right: 4),
-                            child: SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          )
-                        else if (_checkState == _CheckState.valid)
-                          const Padding(
-                            padding: EdgeInsets.only(right: 4),
-                            child: Icon(
-                              Icons.check_circle,
-                              color: AppColors.success,
-                              size: 20,
-                            ),
-                          )
-                        else if (_checkState == _CheckState.invalid)
-                          const Padding(
-                            padding: EdgeInsets.only(right: 4),
-                            child: Icon(
-                              Icons.cancel,
-                              color: AppColors.error,
-                              size: 20,
-                            ),
-                          ),
-                        IconButton(
-                          onPressed: () =>
-                              setState(() => _showCurrent = !_showCurrent),
-                          icon: Icon(
-                            _showCurrent
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined,
-                            size: 20,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
               ),
               const SizedBox(height: 24),
