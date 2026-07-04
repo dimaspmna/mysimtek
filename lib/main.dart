@@ -15,6 +15,7 @@ import 'features/customer/providers/billing_provider.dart';
 import 'features/customer/providers/ticket_provider.dart';
 import 'features/customer/providers/complaint_provider.dart';
 import 'features/customer/providers/notification_provider.dart';
+import 'features/auth/providers/ota_access_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,6 +47,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => TicketProvider(apiService)),
         ChangeNotifierProvider(create: (_) => ComplaintProvider(apiService)),
         ChangeNotifierProvider(create: (_) => NotificationProvider(apiService)),
+        ChangeNotifierProvider(create: (_) => OtaAccessProvider(apiService)),
       ],
       child: const OfaApp(),
     ),

@@ -4,7 +4,7 @@ import '../../../core/constants/app_about.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_version.dart';
 import '../../../core/providers/auth_provider.dart';
-import 'bantuan_masuk_screen.dart';
+import 'request_access_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -213,6 +213,32 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        actions: [
+          TextButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const RequestAccessScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.vpn_key_outlined, size: 16),
+            label: const Text('Dapatkan Akses Masuk'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              textStyle: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -368,9 +394,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                // Bantuan masuk
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
                 // Footer
                 Column(
                   children: [

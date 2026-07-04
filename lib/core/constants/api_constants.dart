@@ -16,6 +16,9 @@ class ApiConstants {
   static const String verifyPassword = '/verify-password';
   static const String changePassword = '/change-password';
 
+  // OTA Access (Minta Akses Masuk)
+  static const String requestAccess = '/v1/auth/request-access';
+
   // Notifications
   static const String announcements = '/notifications/announcements';
   static String announcementMarkRead(int id) =>
