@@ -6,6 +6,7 @@ import '../../../core/constants/app_version.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/whatsapp_help.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/services/fcm_service.dart';
 import '../../../core/widgets/app_loading.dart';
 import '../../../core/widgets/app_webview.dart';
 import 'change_password_screen.dart';
@@ -19,6 +20,23 @@ class CustomerProfileScreen extends StatefulWidget {
 }
 
 class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
+  bool _notificationActive = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkFcmStatus();
+  }
+
+  Future<void> _checkFcmStatus() async {
+    final token = await FcmService.getToken();
+    if (mounted) {
+      setState(() {
+        _notificationActive = token != null && token.isNotEmpty;
+      });
+    }
+  }
+
   static Future<void> _launchWA(String number, String message) async {
     final uri = Uri.parse(
       'https://wa.me/$number?text=${Uri.encodeComponent(message)}',
@@ -316,6 +334,75 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.cardBorder),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: _notificationActive
+                                ? const Color(0xFF16A34A)
+                                : const Color(0xFF94A3B8),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.notifications_outlined,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Notifikasi',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                _notificationActive
+                                    ? 'Aktif'
+                                    : 'Nonaktif',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: _notificationActive
+                                      ? const Color(0xFF16A34A)
+                                      : const Color(0xFF94A3B8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          _notificationActive
+                              ? Icons.check_circle
+                              : Icons.cancel,
+                          size: 18,
+                          color: _notificationActive
+                              ? const Color(0xFF16A34A)
+                              : const Color(0xFF94A3B8),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),

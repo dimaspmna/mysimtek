@@ -203,7 +203,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Text(
                 'Apa yang baru:',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF1E293B),
                 ),
@@ -233,7 +233,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: Text(
                             e.value,
                             style: const TextStyle(
-                              fontSize: 12,
+                              fontSize: 13,
                               color: Color(0xFF475569),
                               height: 1.5,
                             ),
@@ -279,12 +279,12 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+          style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
         ),
         Text(
           value,
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: FontWeight.w600,
             color: Color(0xFF1E293B),
           ),
@@ -329,7 +329,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         'Bantuan',
                         style: TextStyle(
                           color: AppColors.primary,
-                          fontSize: 12,
+                          fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -365,7 +365,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: AppColors.textSecondary,
-                    fontSize: 12,
+                    fontSize: 13,
                     height: 1.5,
                   ),
                 ),
@@ -412,7 +412,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           controller: _emailCtrl,
                           keyboardType: TextInputType.emailAddress,
                           textInputAction: TextInputAction.next,
-                          style: const TextStyle(fontSize: 13),
+                          style: const TextStyle(fontSize: 14),
                           decoration: _inputDecoration(
                             label: 'Email',
                             prefix: const Icon(
@@ -435,7 +435,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           obscureText: _obscure,
                           textInputAction: TextInputAction.done,
                           onFieldSubmitted: (_) => _submit(),
-                          style: const TextStyle(fontSize: 13),
+                          style: const TextStyle(fontSize: 14),
                           decoration: _inputDecoration(
                             label: 'Kata Sandi',
                             prefix: const Icon(
@@ -464,7 +464,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           keyboardType: TextInputType.phone,
                           textInputAction: TextInputAction.next,
                           onFieldSubmitted: (_) => _submit(),
-                          style: const TextStyle(fontSize: 13),
+                          style: const TextStyle(fontSize: 14),
                           decoration: _inputDecoration(
                             label: 'Nomor Telepon',
                             prefix: const Icon(
@@ -519,7 +519,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                                 ? 'Memverifikasi kode OTP…'
                                                 : 'Mengirim kode OTP…',
                                             style: const TextStyle(
-                                              fontSize: 13,
+                                              fontSize: 14,
                                               fontWeight: FontWeight.w600,
                                               color: AppColors.primary,
                                             ),
@@ -554,7 +554,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                           child: Text(
                                             'Kode OTP telah dikirim. Silakan masukkan kode di bawah.',
                                             style: TextStyle(
-                                              fontSize: 13,
+                                              fontSize: 14,
                                               fontWeight: FontWeight.w600,
                                               color: AppColors.primary,
                                             ),
@@ -573,7 +573,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             keyboardType: TextInputType.number,
                             textInputAction: TextInputAction.done,
                             onFieldSubmitted: (_) => _submit(),
-                            style: const TextStyle(fontSize: 13),
+                            style: const TextStyle(fontSize: 14),
                             decoration: _inputDecoration(
                               label: 'Kode OTP',
                               prefix: const Icon(
@@ -622,7 +622,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       errorMsg,
                                       style: const TextStyle(
                                         color: AppColors.error,
-                                        fontSize: 13,
+                                        fontSize: 14,
                                       ),
                                     ),
                                   ),
@@ -641,7 +641,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     const Text(
                                       'Masukkan kode OTP yang dikirim ke WhatsApp Anda.',
                                       style: TextStyle(
-                                        fontSize: 12,
+                                        fontSize: 13,
                                         color: AppColors.textSecondary,
                                       ),
                                     ),
@@ -651,7 +651,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                           ? 'Kirim ulang dalam $_resendSeconds detik'
                                           : 'Anda bisa kirim ulang kode OTP sekarang.',
                                       style: const TextStyle(
-                                        fontSize: 11,
+                                        fontSize: 12,
                                         color: AppColors.textSecondary,
                                       ),
                                     ),
@@ -696,7 +696,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 style: TextButton.styleFrom(
                                   foregroundColor: AppColors.primary,
                                   textStyle: const TextStyle(
-                                    fontSize: 12,
+                                    fontSize: 13,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -735,7 +735,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   errorMsg,
                                   style: const TextStyle(
                                     color: AppColors.error,
-                                    fontSize: 13,
+                                    fontSize: 14,
                                   ),
                                 ),
                               ),
@@ -757,7 +757,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             elevation: 0,
                           ),
-                          child: isLoading
+                          child: isLoading && _loginMode != _LoginMode.otp
                               ? const SizedBox(
                                   width: 18,
                                   height: 18,
@@ -769,7 +769,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               : const Text(
                                   'Masuk',
                                   style: TextStyle(
-                                    fontSize: 14,
+                                    fontSize: 15,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -787,7 +787,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Text(
                         '${AppVersion.appName} - v${AppVersion.version} - ${AppVersion.build}',
                         style: const TextStyle(
-                          fontSize: 11,
+                          fontSize: 12,
                           color: AppColors.primary,
                           letterSpacing: 0.5,
                           fontWeight: FontWeight.bold,
@@ -798,7 +798,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const Text(
                       '2026 © DEVELOPED BY COGLINETECH',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 12,
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -815,7 +815,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         Text(
                           'ofa.my.id',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 12,
                             color: AppColors.textSecondary,
                           ),
                         ),
@@ -863,7 +863,7 @@ class _LoginScreenState extends State<LoginScreen> {
             Text(
               label,
               style: TextStyle(
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                 color: isActive ? AppColors.primary : AppColors.textSecondary,
               ),
@@ -883,7 +883,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return InputDecoration(
       labelText: label,
       hintText: hintText,
-      labelStyle: const TextStyle(fontSize: 13),
+      labelStyle: const TextStyle(fontSize: 14),
       prefixIcon: prefix,
       suffixIcon: suffix,
       border: OutlineInputBorder(
