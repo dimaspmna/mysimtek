@@ -182,29 +182,6 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
                   _BannerSection(banners: d.banners),
                   const SizedBox(height: 16),
                 ],
-                // Footer
-                Column(
-                  children: [
-                    Text(
-                      '${AppVersion.appName} — VERSI ${AppVersion.version}',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      '${AppVersion.copyright}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                ),
-                const SizedBox(height: 16),
               ],
             ),
           );
