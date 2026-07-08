@@ -3,7 +3,18 @@ class ApiConstants {
   // static const String baseUrl = 'http://10.0.2.2:8000/api';
   // static const String baseUrl = "http://192.168.1.33:8000/api";
   // static const String baseUrl = "https://dev-mysimtek.coglinetech.com/api";
-  static const String baseUrl = "https://mysimtek.coglinetech.com/api";
+
+  static const _simtek =
+      "https://mysimtek.coglinetech.com/api";
+  static const _pastelindo =
+      "https://mypastelindo.coglinetech.com/api";
+
+  static const List<Map<String, String>> ispList = [
+    {'id': 'simtek', 'name': 'SIMTEK', 'baseUrl': _simtek},
+    {'id': 'pastelindo', 'name': 'PASTELINDO', 'baseUrl': _pastelindo},
+  ];
+
+  static String baseUrl = _simtek;
 
   /// Public storage URL (for serving uploaded files like PSB photos)
   static String get storageUrl => baseUrl.replaceFirst('/api', '');

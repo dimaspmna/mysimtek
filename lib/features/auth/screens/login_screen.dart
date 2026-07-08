@@ -124,6 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final isLoading = auth.status == AuthStatus.loading;
+    final loadingMessage = auth.loadingMessage;
     final errorMsg = auth.error;
 
     return Scaffold(
@@ -440,9 +441,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                                   const SizedBox(width: 12),
                                                   Expanded(
                                                     child: Text(
-                                                      _otpRequested
-                                                          ? 'Memverifikasi kode OTP…'
-                                                          : 'Mengirim kode OTP…',
+                                                      loadingMessage ??
+                                                          (_otpRequested
+                                                              ? 'Memverifikasi kode OTP…'
+                                                              : 'Mengirim kode OTP…'),
                                                       style: const TextStyle(
                                                         fontSize: 14,
                                                         fontWeight:
@@ -647,6 +649,46 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ],
                                     ),
                                   ],
+                                ],
+                                if (isLoading &&
+                                    _loginMode == _LoginMode.password &&
+                                    loadingMessage != null) ...[
+                                  const SizedBox(height: 16),
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary
+                                          .withValues(alpha: 0.16),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            loadingMessage,
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ],
                                 if (errorMsg != null &&
                                     !(_loginMode == _LoginMode.otp &&

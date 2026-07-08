@@ -16,10 +16,12 @@ class AuthProvider extends ChangeNotifier {
   AuthStatus _status = AuthStatus.initial;
   UserModel? _user;
   String? _error;
+  String? _loadingMessage;
 
   AuthStatus get status => _status;
   UserModel? get user => _user;
   String? get error => _error;
+  String? get loadingMessage => _loadingMessage;
   bool get isAuthenticated => _status == AuthStatus.authenticated;
   bool get isCustomer => _user?.role == 'customer';
 
@@ -94,42 +96,67 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> login(String email, String password) async {
     _status = AuthStatus.loading;
     _error = null;
+    _loadingMessage = 'Sedang memeriksa data Anda…';
     notifyListeners();
     try {
       final loginPayload = await _prepareLoginPayload();
       final loginBody = {'email': email, 'password': password, ...loginPayload};
-      final res = await _api.post(ApiConstants.login, loginBody, auth: false);
-      final token = res['token']?.toString() ?? '';
-      final user = UserModel.fromJson(res['user'] as Map<String, dynamic>);
-      final role = user.role.toLowerCase().trim();
-      if (role != 'customer') {
-        _error =
-            'Akun ini tidak memiliki akses ke aplikasi. '
-            'Hubungi administrator jika ini adalah kesalahan.';
-        _status = AuthStatus.unauthenticated;
-        notifyListeners();
-        return false;
+
+      for (int i = 0; i < ApiConstants.ispList.length; i++) {
+        final isp = ApiConstants.ispList[i];
+        ApiConstants.baseUrl = isp['baseUrl']!;
+        try {
+          final res = await _api.post(
+            ApiConstants.login,
+            loginBody,
+            auth: false,
+          );
+          final token = res['token']?.toString() ?? '';
+          final user = UserModel.fromJson(
+            res['user'] as Map<String, dynamic>,
+          );
+          final role = user.role.toLowerCase().trim();
+          if (role != 'customer') {
+            _error =
+                'Akun ini tidak memiliki akses ke aplikasi. '
+                'Hubungi administrator jika ini adalah kesalahan.';
+            _status = AuthStatus.unauthenticated;
+            _loadingMessage = null;
+            notifyListeners();
+            return false;
+          }
+          await _storage.saveToken(token);
+          await _storage.saveIspId(isp['id']!);
+          _user = user;
+          await _storage.saveRole(role);
+          _status = AuthStatus.authenticated;
+          _loadingMessage = null;
+          notifyListeners();
+
+          try {
+            await FcmService.syncToken();
+          } catch (e) {
+            debugPrint('[Auth] FCM token sync failed after login: $e');
+          }
+          return true;
+        } on ApiException catch (e) {
+          if (i < ApiConstants.ispList.length - 1) {
+            _loadingMessage = 'Mencoba server lain…';
+            notifyListeners();
+            continue;
+          }
+          _error = e.message;
+        }
       }
-      await _storage.saveToken(token);
-      _user = user;
-      await _storage.saveRole(role);
-      _status = AuthStatus.authenticated;
-      notifyListeners();
-      // Sync FCM token after successful login
-      try {
-        await FcmService.syncToken();
-      } catch (e) {
-        debugPrint('[Auth] FCM token sync failed after login: $e');
-      }
-      return true;
-    } on ApiException catch (e) {
-      _error = e.message;
+
       _status = AuthStatus.unauthenticated;
+      _loadingMessage = null;
       notifyListeners();
       return false;
     } catch (e) {
       _error = 'Terjadi kesalahan tidak terduga. Coba lagi.';
       _status = AuthStatus.unauthenticated;
+      _loadingMessage = null;
       notifyListeners();
       return false;
     }
@@ -138,24 +165,40 @@ class AuthProvider extends ChangeNotifier {
   Future<String?> requestOtp(String phone) async {
     _status = AuthStatus.loading;
     _error = null;
+    _loadingMessage = 'Mengirim kode OTP…';
     notifyListeners();
     try {
       final payload = await _prepareLoginPayload();
-      await _api.post(ApiConstants.otpRequest, {
-        'phone': phone,
-        ...payload,
-      }, auth: false);
+      final body = {'phone': phone, ...payload};
+
+      for (int i = 0; i < ApiConstants.ispList.length; i++) {
+        final isp = ApiConstants.ispList[i];
+        ApiConstants.baseUrl = isp['baseUrl']!;
+        try {
+          await _api.post(ApiConstants.otpRequest, body, auth: false);
+          await _storage.saveIspId(isp['id']!);
+          _status = AuthStatus.unauthenticated;
+          _loadingMessage = null;
+          notifyListeners();
+          return null;
+        } on ApiException catch (e) {
+          if (i < ApiConstants.ispList.length - 1) {
+            _loadingMessage = 'Mencoba server lain…';
+            notifyListeners();
+            continue;
+          }
+          _error = e.message;
+        }
+      }
+
       _status = AuthStatus.unauthenticated;
-      notifyListeners();
-      return null;
-    } on ApiException catch (e) {
-      _error = e.message;
-      _status = AuthStatus.unauthenticated;
+      _loadingMessage = null;
       notifyListeners();
       return _error;
     } catch (e) {
       _error = 'Terjadi kesalahan tidak terduga. Coba lagi.';
       _status = AuthStatus.unauthenticated;
+      _loadingMessage = null;
       notifyListeners();
       return _error;
     }
@@ -164,44 +207,67 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> loginWithOtp(String phone, String otpCode) async {
     _status = AuthStatus.loading;
     _error = null;
+    _loadingMessage = 'Memverifikasi kode OTP…';
     notifyListeners();
     try {
       final payload = await _prepareLoginPayload();
-      final res = await _api.post(ApiConstants.otpVerify, {
-        'phone': phone,
-        'otp_code': otpCode,
-        ...payload,
-      }, auth: false);
-      final token = res['token']?.toString() ?? '';
-      final user = UserModel.fromJson(res['user'] as Map<String, dynamic>);
-      final role = user.role.toLowerCase().trim();
-      if (role != 'customer') {
-        _error =
-            'Akun ini tidak memiliki akses ke aplikasi. '
-            'Hubungi administrator jika ini adalah kesalahan.';
-        _status = AuthStatus.unauthenticated;
-        notifyListeners();
-        return false;
+      final body = {'phone': phone, 'otp_code': otpCode, ...payload};
+
+      for (int i = 0; i < ApiConstants.ispList.length; i++) {
+        final isp = ApiConstants.ispList[i];
+        ApiConstants.baseUrl = isp['baseUrl']!;
+        try {
+          final res = await _api.post(
+            ApiConstants.otpVerify,
+            body,
+            auth: false,
+          );
+          final token = res['token']?.toString() ?? '';
+          final user = UserModel.fromJson(
+            res['user'] as Map<String, dynamic>,
+          );
+          final role = user.role.toLowerCase().trim();
+          if (role != 'customer') {
+            _error =
+                'Akun ini tidak memiliki akses ke aplikasi. '
+                'Hubungi administrator jika ini adalah kesalahan.';
+            _status = AuthStatus.unauthenticated;
+            _loadingMessage = null;
+            notifyListeners();
+            return false;
+          }
+          await _storage.saveToken(token);
+          await _storage.saveIspId(isp['id']!);
+          _user = user;
+          await _storage.saveRole(role);
+          _status = AuthStatus.authenticated;
+          _loadingMessage = null;
+          notifyListeners();
+
+          try {
+            await FcmService.syncToken();
+          } catch (e) {
+            debugPrint('[Auth] FCM token sync failed after OTP login: $e');
+          }
+          return true;
+        } on ApiException catch (e) {
+          if (i < ApiConstants.ispList.length - 1) {
+            _loadingMessage = 'Mencoba server lain…';
+            notifyListeners();
+            continue;
+          }
+          _error = e.message;
+        }
       }
-      await _storage.saveToken(token);
-      _user = user;
-      await _storage.saveRole(role);
-      _status = AuthStatus.authenticated;
-      notifyListeners();
-      try {
-        await FcmService.syncToken();
-      } catch (e) {
-        debugPrint('[Auth] FCM token sync failed after OTP login: $e');
-      }
-      return true;
-    } on ApiException catch (e) {
-      _error = e.message;
+
       _status = AuthStatus.unauthenticated;
+      _loadingMessage = null;
       notifyListeners();
       return false;
     } catch (e) {
       _error = 'Terjadi kesalahan tidak terduga. Coba lagi.';
       _status = AuthStatus.unauthenticated;
+      _loadingMessage = null;
       notifyListeners();
       return false;
     }
@@ -215,6 +281,8 @@ class AuthProvider extends ChangeNotifier {
     } catch (_) {}
     await _storage.clearAll();
     _user = null;
+    _error = null;
+    _loadingMessage = null;
     _status = AuthStatus.unauthenticated;
     notifyListeners();
   }

@@ -6,6 +6,7 @@ import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'app.dart';
+import 'core/constants/api_constants.dart';
 import 'core/services/api_service.dart';
 import 'core/services/storage_service.dart';
 import 'core/services/fcm_service.dart';
@@ -30,6 +31,20 @@ void main() async {
 
   final storageService = StorageService();
   final apiService = ApiService(storageService);
+
+  // Terapkan URL ISP yang tersimpan (jika ada)
+  final savedIspId = await storageService.getIspId();
+  if (savedIspId != null) {
+    final isp = ApiConstants.ispList
+        .cast<Map<String, String>?>()
+        .firstWhere(
+          (e) => e!['id'] == savedIspId,
+          orElse: () => null,
+        );
+    if (isp != null) {
+      ApiConstants.baseUrl = isp['baseUrl']!;
+    }
+  }
 
   await FcmService.initialize(apiService);
 
