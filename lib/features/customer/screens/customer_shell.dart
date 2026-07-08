@@ -12,7 +12,7 @@ import '../../customer/providers/ticket_provider.dart';
 import '../models/notification_model.dart';
 import 'customer_dashboard_screen.dart';
 import 'customer_profile_screen.dart';
-import 'billing/billing_screen.dart';
+import 'billing/payment_method_selection_screen.dart';
 import 'lapor_screen.dart';
 import 'notifications/notification_screen.dart';
 import 'complaints/complaint_detail_screen.dart';
@@ -113,7 +113,7 @@ class _CustomerShellState extends State<CustomerShell>
       // Push Billing screen
       Navigator.of(
         context,
-      ).push(MaterialPageRoute(builder: (_) => const BillingScreen()));
+      ).push(MaterialPageRoute(builder: (_) => const PaymentMethodSelectionScreen()));
     } else if (type == 'ticket_update' || type == 'ticket_message') {
       final ticketId = int.tryParse(data['ticket_id'] ?? '');
       if (ticketId != null) {

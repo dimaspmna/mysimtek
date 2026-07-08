@@ -11,7 +11,7 @@ import '../providers/notification_provider.dart';
 import '../models/customer_dashboard_model.dart';
 import '../../../core/widgets/app_webview.dart';
 import 'notifications/notification_screen.dart';
-import 'billing/billing_screen.dart';
+import 'billing/payment_method_selection_screen.dart';
 import 'billing/payment_history_screen.dart';
 import 'lapor_screen.dart';
 
@@ -168,7 +168,9 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
                       .length,
                   onTagihanTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const BillingScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const PaymentMethodSelectionScreen(),
+                    ),
                   ),
                   onKomplainTap: () => Navigator.push(
                     context,
@@ -251,38 +253,6 @@ class _HeroCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: statusInfo.dotColor,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        statusInfo.label,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ],
             ),
             const SizedBox(height: 20),
@@ -295,9 +265,9 @@ class _HeroCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 _infoChip(
-                  Icons.speed_rounded,
-                  'KECEPATAN INTERNET',
-                  dashboard.speed ?? '—',
+                  Icons.person_rounded,
+                  'STATUS PELANGGAN',
+                  statusInfo.label,
                 ),
               ],
             ),
@@ -567,10 +537,12 @@ class _QuickMenu extends StatelessWidget {
             Expanded(
               child: _QuickMenuItem(
                 icon: Icons.receipt_long_rounded,
-                label: 'Tagihan',
+                label: 'Bayar',
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const BillingScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const PaymentMethodSelectionScreen(),
+                  ),
                 ),
               ),
             ),

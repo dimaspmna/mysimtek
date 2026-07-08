@@ -21,6 +21,7 @@ class CustomerProfileScreen extends StatefulWidget {
 
 class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
   bool _notificationActive = false;
+  bool _isLoggingOut = false;
 
   @override
   void initState() {
@@ -229,9 +230,11 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
         surfaceTintColor: Colors.transparent,
         centerTitle: false,
       ),
-      body: user == null
-          ? const AppLoading()
-          : ListView(
+      body: Stack(
+        children: [
+          user == null
+              ? const AppLoading()
+              : ListView(
               padding: const EdgeInsets.all(16),
               children: [
                 const Align(
@@ -599,6 +602,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                               ),
                             );
                             if (confirm == true && context.mounted) {
+                              setState(() => _isLoggingOut = true);
                               await context.read<AuthProvider>().logout();
                             }
                           },
@@ -631,9 +635,18 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                     const SizedBox(height: 8),
                   ],
                 ),
-                const SizedBox(height: 16),
-              ],
+              const SizedBox(height: 16),
+            ],
+          ),
+          if (_isLoggingOut)
+            Container(
+              color: Colors.black.withValues(alpha: 0.3),
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
             ),
+        ],
+      ),
     );
   }
 

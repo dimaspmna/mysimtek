@@ -3,12 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/widgets/app_loading.dart';
 import '../../../../core/widgets/app_error_view.dart';
 import '../../models/invoice_model.dart';
 import '../../providers/billing_provider.dart';
-import '../../providers/customer_dashboard_provider.dart';
 import 'payment_history_screen.dart';
 
 class BillingScreen extends StatefulWidget {
@@ -137,7 +135,7 @@ class _BillingScreenState extends State<BillingScreen>
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
-          'Tagihan Internet',
+          'Pembayaran Midtrans',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         backgroundColor: Colors.white,
@@ -175,10 +173,6 @@ class _TagihanTab extends StatelessWidget {
         }
 
         final invoices = prov.activeBilling?.invoices ?? [];
-        final lunas = invoices.where((inv) => inv.isPaid).length;
-        final totalBayar = invoices
-            .where((inv) => !inv.isPaid)
-            .fold<double>(0, (s, inv) => s + inv.amount);
         final fmt = NumberFormat.currency(
           locale: 'id_ID',
           symbol: 'Rp ',
@@ -186,7 +180,7 @@ class _TagihanTab extends StatelessWidget {
         );
 
         if (invoices.isEmpty) {
-          return _buildEmptyState(context, prov, fmt, lunas, totalBayar);
+          return _buildEmptyState(context);
         }
 
         return RefreshIndicator(
@@ -195,12 +189,7 @@ class _TagihanTab extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
             children: [
-              _SummaryCard(
-                total: invoices.length,
-                lunas: lunas,
-                totalBayar: fmt.format(totalBayar),
-                invoices: invoices,
-              ),
+              const _MetodePembayaranHeader(),
               const SizedBox(height: 14),
               ...invoices.map(
                 (inv) => Padding(
@@ -220,26 +209,12 @@ class _TagihanTab extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState(
-    BuildContext context,
-    BillingProvider prov,
-    NumberFormat fmt,
-    int lunas,
-    double totalBayar,
-  ) {
-    final summaryCard = _SummaryCard(
-      total: 0,
-      lunas: lunas,
-      totalBayar: fmt.format(totalBayar),
-      showAllPaid: true,
-      dueDate: prov.activeBilling?.stats.nextDueDate,
-    );
-
+  Widget _buildEmptyState(BuildContext context) {
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: summaryCard,
+          child: const _MetodePembayaranHeader(),
         ),
         Expanded(
           child: ListView(
@@ -311,22 +286,8 @@ class _TagihanTab extends StatelessWidget {
   }
 }
 
-class _SummaryCard extends StatelessWidget {
-  final int total;
-  final int lunas;
-  final String totalBayar;
-  final bool showAllPaid;
-  final String? dueDate;
-  final List<Invoice>? invoices;
-
-  const _SummaryCard({
-    required this.total,
-    required this.lunas,
-    required this.totalBayar,
-    this.showAllPaid = false,
-    this.dueDate,
-    this.invoices,
-  });
+class _MetodePembayaranHeader extends StatelessWidget {
+  const _MetodePembayaranHeader();
 
   @override
   Widget build(BuildContext context) {
@@ -344,92 +305,45 @@ class _SummaryCard extends StatelessWidget {
         ],
       ),
       padding: const EdgeInsets.all(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: showAllPaid
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Text(
-                                'Tagihan lunas',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF0F172A),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Tidak ada tagihan yang perlu dibayar.',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
-                          if (dueDate != null) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              'Jatuh tempo: $dueDate',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: Color(0xFF64748B),
-                              ),
-                            ),
-                          ],
-                        ],
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'TOTAL PEMBAYARAN',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF64748B),
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            totalBayar,
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF0F172A),
-                              height: 1.2,
-                            ),
-                          ),
-                        ],
-                      ),
-              ),
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF97316).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Midtrans',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F172A),
+                  ),
                 ),
-                child: const Icon(
-                  Icons.credit_card_rounded,
-                  color: Color(0xFFF97316),
-                  size: 22,
+                SizedBox(height: 4),
+                Text(
+                  'GoPay, QRIS, Transfer Bank dan lainnya',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF64748B),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-          if (!showAllPaid && invoices != null && invoices!.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            Container(height: 1, color: const Color(0xFFF1F5F9)),
-          ],
+          const SizedBox(width: 14),
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF97316).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.credit_card_rounded,
+              color: Color(0xFFF97316),
+              size: 22,
+            ),
+          ),
         ],
       ),
     );
@@ -452,11 +366,6 @@ class _InvoiceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final inv = invoice;
-    final packageName =
-        inv.packageName ??
-        context.read<AuthProvider>().user?.packageName ??
-        context.read<CustomerDashboardProvider>().dashboard?.packageName ??
-        '-';
 
     return Container(
       decoration: BoxDecoration(
@@ -531,8 +440,6 @@ class _InvoiceCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            _row('Paket', packageName),
-            _row('Jatuh Tempo', inv.dueDate),
             if (inv.paidAt != null) ...[
               const SizedBox(height: 8),
               _row('Tanggal Bayar', inv.paidAt!.split('T').first),
@@ -599,9 +506,9 @@ class _InvoiceCard extends StatelessWidget {
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
+                child: ElevatedButton.icon(
                   onPressed: loadingPay ? null : onPay,
-                  child: loadingPay
+                  icon: loadingPay
                       ? const SizedBox(
                           width: 16,
                           height: 16,
@@ -610,6 +517,9 @@ class _InvoiceCard extends StatelessWidget {
                             valueColor: AlwaysStoppedAnimation(Colors.white),
                           ),
                         )
+                      : const Icon(Icons.payment_rounded, size: 18),
+                  label: loadingPay
+                      ? const SizedBox.shrink()
                       : const Text(
                           'Bayar Sekarang',
                           style: TextStyle(
