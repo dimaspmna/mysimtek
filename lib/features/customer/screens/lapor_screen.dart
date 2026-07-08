@@ -32,7 +32,7 @@ class _LaporScreenState extends State<LaporScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
-          'Daftar Komplain',
+          'Daftar Laporan',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         backgroundColor: Colors.white,
@@ -94,8 +94,8 @@ class _LaporScreenState extends State<LaporScreen> {
                   child: Center(
                     child: AppEmptyState(
                       message:
-                          'Belum ada komplain baru.\nTekan + untuk buat tiket komplain baru.',
-                      icon: Icons.handyman_outlined,
+                          'Belum ada laporan baru.\nTekan + untuk buat tiket laporan baru.',
+                      icon: Icons.inbox_outlined,
                     ),
                   ),
                 ),
@@ -203,7 +203,13 @@ class _TicketCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.cardBorder),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: InkWell(
         onTap: () => Navigator.push(
@@ -219,6 +225,7 @@ class _TicketCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
                     width: 40,
@@ -228,7 +235,7 @@ class _TicketCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(
-                      Icons.handyman_outlined,
+                      Icons.assignment_outlined,
                       color: AppColors.primary,
                       size: 20,
                     ),
@@ -248,47 +255,54 @@ class _TicketCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        if (ticket.ticketNumber.isNotEmpty)
-                          Text(
-                            '#${ticket.ticketNumber}',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textSecondary,
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            if (ticket.ticketNumber.isNotEmpty) ...[
+                              Text(
+                                '#${ticket.ticketNumber}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                width: 3,
+                                height: 3,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFCBD5E1),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            Text(
+                              ticket.categoryLabel,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textSecondary,
+                              ),
                             ),
-                          ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
+                  const SizedBox(width: 8),
                   StatusBadge(ticket.status),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Row(
                 children: [
-                  Text(
-                    ticket.categoryLabel,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
                   if (ticket.hasAssignedTechnician) ...[
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 6),
-                      child: Text(
-                        '\u2022',
-                        style: TextStyle(
-                          color: AppColors.divider,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ),
                     Icon(
                       Icons.person_outline,
-                      size: 11,
+                      size: 12,
                       color: AppColors.textSecondary,
                     ),
-                    const SizedBox(width: 3),
+                    const SizedBox(width: 4),
                     Text(
                       'Teknisi',
                       style: const TextStyle(
@@ -296,18 +310,27 @@ class _TicketCard extends StatelessWidget {
                         color: AppColors.textSecondary,
                       ),
                     ),
+                    const SizedBox(width: 12),
+                    Container(
+                      width: 3,
+                      height: 3,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFCBD5E1),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
                   ],
-                  const Spacer(),
                   Icon(
                     Icons.calendar_today_outlined,
-                    size: 10,
+                    size: 12,
                     color: AppColors.textSecondary,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     ticket.createdAt.split('T').first,
                     style: const TextStyle(
-                      fontSize: 10,
+                      fontSize: 11,
                       color: AppColors.textSecondary,
                     ),
                   ),

@@ -246,6 +246,7 @@ class BrivaScreen extends StatelessWidget {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Nomor BRIVA berhasil disalin'),
+                              backgroundColor: Color(0xFF0F766E),
                               behavior: SnackBarBehavior.floating,
                             ),
                           );

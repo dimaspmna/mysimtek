@@ -111,10 +111,12 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                 if (history.isEmpty)
                   _buildEmpty()
                 else
-                  ...history.map((inv) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _HistTile(invoice: inv, fmt: fmt),
-                  )),
+                  ...history.map(
+                    (inv) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _HistTile(invoice: inv, fmt: fmt),
+                    ),
+                  ),
               ],
             ),
           );
@@ -160,15 +162,22 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final total = history.length;
     final totalLunas = history.where((inv) => inv.isPaid).length;
-    final totalUnpaid = history.where((inv) => !inv.isPaid).length;
+    final totalUnpaid = total - totalLunas;
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       child: Row(
         children: [
           Expanded(
@@ -178,28 +187,27 @@ class _SummaryCard extends StatelessWidget {
                 Text(
                   '$totalLunas Lunas',
                   style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                     color: Color(0xFF0F172A),
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 6),
                 Text(
                   '$totalUnpaid Belum dibayar',
                   style: const TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF64748B),
+                    color: Color(0xFF0F172A),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 14),
           Container(
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: const Color(0xFFF97316).withOpacity(0.1),
+              color: const Color(0xFFF97316).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
@@ -228,7 +236,13 @@ class _HistTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -236,16 +250,15 @@ class _HistTile extends StatelessWidget {
           if (inv.isPaid) {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => ReceiptScreen(invoice: inv),
-              ),
+              MaterialPageRoute(builder: (_) => ReceiptScreen(invoice: inv)),
             );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text(
-                  'Silakan bayar tagihan dari halaman Tagihan Internet.',
+                  'Silakan bayar tagihan dari halaman Bayar Tagihan.',
                 ),
+                backgroundColor: Color(0xFFDC2626),
                 behavior: SnackBarBehavior.floating,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.all(Radius.circular(12)),
@@ -257,13 +270,13 @@ class _HistTile extends StatelessWidget {
         },
         child: Padding(
           padding: const EdgeInsets.all(14),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
                       inv.formattedPeriod,
                       style: const TextStyle(
                         fontSize: 14,
@@ -271,44 +284,57 @@ class _HistTile extends StatelessWidget {
                         color: Color(0xFF0F172A),
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      inv.invoiceNumber,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF64748B),
-                      ),
-                    ),
-                    if (inv.formattedPaidAt != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        inv.formattedPaidAt!,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: const Color(0xFF94A3B8),
-                          height: 1.3,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+                  ),
+                ],
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              const SizedBox(height: 6),
+              Row(
                 children: [
                   Text(
-                    fmt.format(inv.amount),
+                    inv.formattedPeriod,
                     style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
                       color: Color(0xFF0F172A),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 6),
+                    child: Text(
+                      '|',
+                      style: TextStyle(color: Color(0xFFCBD5E1)),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      inv.invoiceNumber,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF0F172A),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              if (inv.formattedPaidAt != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  inv.formattedPaidAt!,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 8),
+              Divider(height: 1, color: const Color(0xFFF1F5F9)),
+              const SizedBox(height: 8),
+              Row(
+                children: [
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
+                      horizontal: 10,
+                      vertical: 4,
                     ),
                     decoration: BoxDecoration(
                       color: _statusBg(inv.status),
@@ -317,19 +343,28 @@ class _HistTile extends StatelessWidget {
                     child: Text(
                       _histStatusLabel(inv.status),
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: _statusText(inv.status),
                       ),
                     ),
                   ),
+                  const Spacer(),
+                  Text(
+                    fmt.format(inv.amount),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: const Color(0xFFCBD5E1),
+                    size: 18,
+                  ),
                 ],
-              ),
-              const SizedBox(width: 4),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: Color(0xFFCBD5E1),
-                size: 20,
               ),
             ],
           ),

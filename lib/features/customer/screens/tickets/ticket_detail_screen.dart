@@ -63,7 +63,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
-          'Detail Komplain',
+          'Detail Laporan',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         backgroundColor: Colors.white,

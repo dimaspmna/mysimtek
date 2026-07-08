@@ -63,7 +63,7 @@ class Invoice {
         period: period,
       );
 
-  /// Format paidAt ISO string ke "12 Juni 2026\n18.09 WIB"
+  /// Format paidAt ISO string ke "21 April 2026 | 09.47 WIB"
   String? get formattedPaidAt {
     if (paidAt == null || paidAt!.isEmpty) return null;
     try {
@@ -75,7 +75,7 @@ class Invoice {
       final date = '${dt.day} ${months[dt.month - 1]} ${dt.year}';
       final time =
           '${dt.hour.toString().padLeft(2, '0')}.${dt.minute.toString().padLeft(2, '0')} WIB';
-      return '$date\n$time';
+      return '$date | $time';
     } catch (_) {
       return null;
     }

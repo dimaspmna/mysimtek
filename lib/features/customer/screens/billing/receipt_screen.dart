@@ -300,13 +300,13 @@ class _ReceiptCard extends StatelessWidget {
                 const Text(
                   'Terima kasih telah melakukan pembayaran.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                  style: TextStyle(fontSize: 11, color: Color(0xFF1E293B)),
                 ),
                 const SizedBox(height: 2),
                 const Text(
                   'Dokumen ini sah tanpa tanda tangan.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 10, color: Color(0xFFCBD5E1)),
+                  style: TextStyle(fontSize: 10, color: Color(0xFF1E293B)),
                 ),
               ],
             ),
@@ -392,7 +392,7 @@ class _ReceiptHeader extends StatelessWidget {
               Text(
                 'PT GUSTI GLOBAL GROUP',
                 style: TextStyle(
-                  fontSize: 9,
+                  fontSize: 12,
                   color: Colors.white.withOpacity(0.85),
                   letterSpacing: 0.5,
                 ),

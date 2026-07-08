@@ -563,7 +563,7 @@ class _QuickMenu extends StatelessWidget {
             Expanded(
               child: _QuickMenuItem(
                 icon: Icons.headset_mic_rounded,
-                label: 'Komplain',
+                label: 'Lapor',
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const LaporScreen()),
@@ -580,7 +580,7 @@ class _QuickMenu extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (_) => const AppWebView(
                       title: 'Panduan Aplikasi',
-                      url: 'https://billing.simtek.co.id/guide',
+                      url: 'https://ofa.my.id',
                     ),
                   ),
                 ),
@@ -636,47 +636,48 @@ class _QuickMenuItem extends StatelessWidget {
                   child: Icon(icon, color: Colors.white, size: 20),
                 ),
                 const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      label,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1E293B),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1E293B),
+                      height: 1.3,
+                    ),
+                    overflow: TextOverflow.visible,
+                    softWrap: true,
+                  ),
+                ),
+                if (badgeCount > 0) ...[
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 1,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Center(
+                      child: Text(
+                        badgeCount > 99 ? '99+' : '$badgeCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                    if (badgeCount > 0) ...[
-                      const SizedBox(width: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 1,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        child: Center(
-                          child: Text(
-                            badgeCount > 99 ? '99+' : '$badgeCount',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+                  ),
+                ],
               ],
             ),
           ),

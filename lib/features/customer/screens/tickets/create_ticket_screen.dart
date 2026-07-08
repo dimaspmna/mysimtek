@@ -47,7 +47,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Komplain berhasil dikirim'),
+          content: Text('laporan berhasil dikirim'),
           backgroundColor: AppColors.success,
         ),
       );
@@ -55,7 +55,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
       final err = context.read<TicketProvider>().listError;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(err ?? 'Gagal mengirim Komplain'),
+          content: Text(err ?? 'Gagal mengirim laporan'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -70,7 +70,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
-          'Buat Komplain',
+          'Buat Tiket Laporan',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         backgroundColor: Colors.white,
@@ -197,7 +197,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                         ),
                       )
                     : const Text(
-                        'Kirim Komplain',
+                        'Kirim laporan',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,

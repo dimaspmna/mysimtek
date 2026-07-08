@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/whatsapp_admin.dart';
@@ -290,7 +291,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             children: [
                               Expanded(
                                 child: _tabButton(
-                                  label: 'Email / Password',
+                                  label: 'Email',
                                   icon: Icons.email_outlined,
                                   isActive: _loginMode == _LoginMode.password,
                                   onTap: () => setState(() {
@@ -306,7 +307,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               Expanded(
                                 child: _tabButton(
                                   label: 'WhatsApp OTP',
-                                  icon: Icons.message_outlined,
+                                  icon: FontAwesomeIcons.whatsapp,
                                   isActive: _loginMode == _LoginMode.otp,
                                   onTap: () => setState(() {
                                     _loginMode = _LoginMode.otp;
@@ -661,8 +662,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                       vertical: 12,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary
-                                          .withValues(alpha: 0.16),
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.16,
+                                      ),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: Row(

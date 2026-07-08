@@ -39,7 +39,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Kata sandi berhasil diubah.'),
+          content: Text('Password berhasil diubah.'),
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
         ),
@@ -65,7 +65,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
-          'Ganti Kata Sandi',
+          'Reset Password',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         backgroundColor: Colors.white,
@@ -98,7 +98,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
-                        'Kata sandi baru minimal 8 karakter.',
+                        'Password baru minimal 8 karakter.',
                         style: TextStyle(
                           fontSize: 13,
                           color: AppColors.textPrimary,
@@ -109,9 +109,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              // ── Section: Kata Sandi Baru ──────────────────────────────
+              // ── Section: Password Baru ──────────────────────────────
               const Text(
-                'Masukkan Kata Sandi Baru',
+                'Masukkan Password Baru',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -120,7 +120,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              // Form card — kata sandi baru
+              // Form card — Password baru
               Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -132,7 +132,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   children: [
                     _buildField(
                       controller: _newCtrl,
-                      label: 'Kata Sandi Baru',
+                      label: 'Password Baru',
                       show: _showNew,
                       onToggle: () => setState(() => _showNew = !_showNew),
                       helperText: _newTouched ? 'Minimal 8 karakter' : null,
@@ -148,7 +148,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     const SizedBox(height: 16),
                     _buildField(
                       controller: _confirmCtrl,
-                      label: 'Konfirmasi Kata Sandi Baru',
+                      label: 'Konfirmasi Password Baru',
                       show: _showConfirm,
                       onToggle: () =>
                           setState(() => _showConfirm = !_showConfirm),
@@ -190,7 +190,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         ),
                       )
                     : const Text(
-                        'Ganti Kata Sandi',
+                        'Reset Password',
                         style: TextStyle(fontWeight: FontWeight.w600),
                       ),
               ),
