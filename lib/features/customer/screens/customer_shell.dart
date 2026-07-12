@@ -72,7 +72,8 @@ class _CustomerShellState extends State<CustomerShell>
         _showPaymentSuccessPopup(msg.data);
       } else if (type == 'unpaid' ||
           type == 'pending' ||
-          type == 'overdue') {
+          type == 'overdue' ||
+          type == 'briva_rejected') {
         context.read<BillingProvider>().loadActiveBilling();
         context.read<CustomerDashboardProvider>().load();
         context.read<NotificationProvider>().load();
@@ -109,7 +110,8 @@ class _CustomerShellState extends State<CustomerShell>
     if (type == 'unpaid' ||
         type == 'paid' ||
         type == 'pending' ||
-        type == 'overdue') {
+        type == 'overdue' ||
+        type == 'briva_rejected') {
       // Push Billing screen
       Navigator.of(
         context,

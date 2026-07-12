@@ -54,6 +54,12 @@ class ApiConstants {
       '/customer/invoices/$id/receipt';
   static String customerPaymentUrl(dynamic invoiceId) =>
       '/customer/billing/$invoiceId/payment-url';
+
+  // BRIVA
+  static String customerBrivaPayment(dynamic invoiceId) =>
+      '/customer/invoices/$invoiceId/briva-payment';
+  static String customerBrivaPaymentStatus(dynamic invoiceId) =>
+      '/customer/invoices/$invoiceId/briva-payment-status';
   static const String customerTickets = '/customer/tickets';
   static String customerTicketDetail(dynamic id) => '/customer/tickets/$id';
   static String customerTicketMessages(dynamic id) =>

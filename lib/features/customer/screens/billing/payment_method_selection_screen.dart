@@ -43,15 +43,14 @@ class _PaymentMethodSelectionScreenState
         children: [
           const SizedBox(height: 4),
           const Text(
-            'Pilih metode pembayaran yang ingin digunakan:',
+            'Pilih metode pembayaran yang tersedia',
             style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
           ),
           const SizedBox(height: 16),
           _PaymentMethodCard(
             imageAsset: 'assets/icon/payment-method/icon_midtrans.png',
             title: 'Midtrans',
-            subtitle:
-                'Bayar via Virtual Account, GoPay, QRIS, dan lainnya',
+            subtitle: 'Bayar via Virtual Account, GoPay, QRIS, dan lainnya',
             onTap: () {
               Navigator.push(
                 context,

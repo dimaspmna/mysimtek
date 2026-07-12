@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/services/api_service.dart';
 import '../models/billing_model.dart';
+import '../models/briva_payment_model.dart';
 import '../models/invoice_model.dart';
 
 class BillingProvider extends ChangeNotifier {
@@ -20,6 +22,16 @@ class BillingProvider extends ChangeNotifier {
   String? _invoiceError;
 
   String? _paymentUrlError;
+
+  bool _brivaUploading = false;
+  String? _brivaUploadError;
+  BrivaPaymentStatus? _brivaStatus;
+  String? _brivaStatusError;
+
+  bool get brivaUploading => _brivaUploading;
+  String? get brivaUploadError => _brivaUploadError;
+  BrivaPaymentStatus? get brivaStatus => _brivaStatus;
+  String? get brivaStatusError => _brivaStatusError;
 
   bool get billingLoading => _billingLoading;
   BillingInfo? get activeBilling => _activeBilling;
@@ -134,5 +146,65 @@ class BillingProvider extends ChangeNotifier {
       notifyListeners();
       return null;
     }
+  }
+
+  Future<bool> uploadBrivaProof({
+    required int invoiceId,
+    required File proofFile,
+    String? note,
+  }) async {
+    _brivaUploading = true;
+    _brivaUploadError = null;
+    notifyListeners();
+    try {
+      final fields = <String, String>{};
+      if (note != null && note.trim().isNotEmpty) {
+        fields['note'] = note.trim();
+      }
+      await _api.postMultipart(
+        ApiConstants.customerBrivaPayment(invoiceId),
+        fields,
+        file: proofFile,
+        fileField: 'proof',
+      );
+      return true;
+    } on ApiException catch (e) {
+      _brivaUploadError = e.message;
+      return false;
+    } catch (e) {
+      _brivaUploadError = 'Gagal mengunggah bukti pembayaran. Coba lagi.';
+      return false;
+    } finally {
+      _brivaUploading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> getBrivaPaymentStatus(int invoiceId) async {
+    _brivaStatusError = null;
+    try {
+      final res = await _api.get(
+        ApiConstants.customerBrivaPaymentStatus(invoiceId),
+      );
+      final map = res is Map<String, dynamic>
+          ? res
+          : Map<String, dynamic>.from(res as Map);
+      _brivaStatus = BrivaPaymentStatus.fromJson(map);
+      notifyListeners();
+    } on ApiException catch (e) {
+      _brivaStatusError = e.message;
+      notifyListeners();
+    } catch (e) {
+      _brivaStatusError = 'Gagal memeriksa status pembayaran.';
+      notifyListeners();
+    }
+  }
+
+  void clearBrivaState() {
+    _brivaUploading = false;
+    _brivaUploadError = null;
+    _brivaStatus = null;
+    _brivaStatusError = null;
+    notifyListeners();
   }
 }

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_version.dart';
 import '../../../core/providers/auth_provider.dart';
-import '../../../core/widgets/app_loading.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../providers/customer_dashboard_provider.dart';
 import '../providers/ticket_provider.dart';
@@ -135,7 +133,7 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
         builder: (context, provider, _) {
           if (provider.state == LoadState.loading ||
               provider.state == LoadState.initial) {
-            return const AppLoading();
+            return const _DashboardSkeleton();
           }
           if (provider.state == LoadState.error) {
             return AppErrorView(
@@ -384,6 +382,107 @@ class _HeroCard extends StatelessWidget {
     }
   }
 }
+
+// ── Dashboard Skeleton ─────────────────────────────────────────────────────────
+
+class _DashboardSkeleton extends StatelessWidget {
+  const _DashboardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      children: [
+        _SkeletonBox(height: 180, radius: 20, delayMs: 0),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(child: _SkeletonBox(height: 88, radius: 16, delayMs: 100)),
+            const SizedBox(width: 12),
+            Expanded(child: _SkeletonBox(height: 88, radius: 16, delayMs: 200)),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(child: _SkeletonBox(height: 88, radius: 14, delayMs: 300)),
+            const SizedBox(width: 10),
+            Expanded(child: _SkeletonBox(height: 88, radius: 14, delayMs: 400)),
+            const SizedBox(width: 10),
+            Expanded(child: _SkeletonBox(height: 88, radius: 14, delayMs: 500)),
+            const SizedBox(width: 10),
+            Expanded(child: _SkeletonBox(height: 88, radius: 14, delayMs: 600)),
+          ],
+        ),
+        const SizedBox(height: 20),
+        _SkeletonBox(height: 120, radius: 14, delayMs: 700),
+      ],
+    );
+  }
+}
+
+class _SkeletonBox extends StatefulWidget {
+  final double height;
+  final double radius;
+  final int delayMs;
+  const _SkeletonBox({
+    required this.height,
+    required this.radius,
+    this.delayMs = 0,
+  });
+
+  @override
+  State<_SkeletonBox> createState() => _SkeletonBoxState();
+}
+
+class _SkeletonBoxState extends State<_SkeletonBox>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _animation = Tween<double>(begin: 0.35, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+    Future.delayed(Duration(milliseconds: widget.delayMs), () {
+      if (mounted) _controller.repeat(reverse: true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Opacity(
+          opacity: _animation.value,
+          child: child,
+        );
+      },
+      child: Container(
+        height: widget.height,
+        decoration: BoxDecoration(
+          color: const Color(0xFFE2E8F0),
+          borderRadius: BorderRadius.circular(widget.radius),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Status Info ───────────────────────────────────────────────────────────────
 
 class _StatusInfo {
   final String label;

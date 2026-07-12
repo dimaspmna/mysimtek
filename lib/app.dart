@@ -70,7 +70,7 @@ class _SplashRouterState extends State<_SplashRouter> {
   }
 
   Future<void> _init() async {
-    await Future.delayed(const Duration(seconds: 1));
+    await Future.delayed(const Duration(seconds: 2));
     await context.read<AuthProvider>().checkAuth();
     if (!mounted) return;
     setState(() => _initialized = true);
@@ -95,6 +95,4 @@ class _SplashRouterState extends State<_SplashRouter> {
 
     return const LoginScreen();
   }
-
-
 }
