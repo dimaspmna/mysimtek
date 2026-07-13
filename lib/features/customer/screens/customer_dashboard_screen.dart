@@ -677,7 +677,7 @@ class _QuickMenu extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (_) => const AppWebView(
                       title: 'Panduan Aplikasi',
-                      url: 'https://ofa.my.id/panduan-penggunaan',
+                      url: 'https://ofa.my.id/panduan',
                     ),
                   ),
                 ),
