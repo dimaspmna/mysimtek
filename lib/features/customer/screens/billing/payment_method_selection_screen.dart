@@ -25,6 +25,12 @@ class _PaymentMethodSelectionScreenState
 
   @override
   Widget build(BuildContext context) {
+    final customerPayment =
+        context.watch<BillingProvider>().activeBilling?.customerPayment;
+
+    final bool midtransDisabled = customerPayment?.isBriva ?? false;
+    final bool brivaDisabled = customerPayment?.isMidtrans ?? false;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -51,10 +57,19 @@ class _PaymentMethodSelectionScreenState
             imageAsset: 'assets/icon/payment-method/icon_midtrans.png',
             title: 'Midtrans',
             subtitle: 'Bayar via Virtual Account, GoPay, QRIS, dan lainnya',
+            disabled: midtransDisabled,
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const BillingScreen()),
+              );
+            },
+            onDisabledTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Hanya bisa dilakukan melalui BRIVA saja'),
+                  behavior: SnackBarBehavior.floating,
+                ),
               );
             },
           ),
@@ -63,10 +78,19 @@ class _PaymentMethodSelectionScreenState
             imageAsset: 'assets/icon/payment-method/icon_briva.png',
             title: 'BRIVA',
             subtitle: 'Bayar melalui BRI Virtual Account (BRIVA)',
+            disabled: brivaDisabled,
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const BrivaScreen()),
+              );
+            },
+            onDisabledTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Hanya bisa pembayaran melalui Midtrans saja'),
+                  behavior: SnackBarBehavior.floating,
+                ),
               );
             },
           ),
@@ -81,70 +105,77 @@ class _PaymentMethodCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final bool disabled;
+  final VoidCallback? onDisabledTap;
 
   const _PaymentMethodCard({
     required this.imageAsset,
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.disabled = false,
+    this.onDisabledTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: onTap,
+      onTap: disabled ? onDisabledTap : onTap,
       borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 1),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                imageAsset,
-                width: 56,
-                height: 56,
-                fit: BoxFit.contain,
+      child: Opacity(
+        opacity: disabled ? 0.4 : 1.0,
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 1),
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ],
+            ],
+          ),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset(
+                  imageAsset,
+                  width: 56,
+                  height: 56,
+                  fit: BoxFit.contain,
+                ),
               ),
-            ),
-            const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8)),
-          ],
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E293B),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8)),
+            ],
+          ),
         ),
       ),
     );
