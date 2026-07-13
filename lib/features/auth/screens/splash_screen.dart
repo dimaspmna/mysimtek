@@ -9,10 +9,7 @@ class SplashScreen extends StatelessWidget {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset(
-            'assets/images/splash_screen.jpeg',
-            fit: BoxFit.cover,
-          ),
+          Image.asset('assets/images/splash_screen.png', fit: BoxFit.cover),
           const Positioned(
             bottom: 48,
             left: 0,
