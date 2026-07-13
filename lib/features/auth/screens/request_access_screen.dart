@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -18,15 +20,34 @@ class _RequestAccessScreenState extends State<RequestAccessScreen> {
   final _formKey = GlobalKey<FormState>();
   final _addressFormKey = GlobalKey<FormState>();
   bool _phoneChecked = false;
+  Timer? _checkTimer;
+  int _checkSeconds = 0;
 
   @override
   void dispose() {
+    _checkTimer?.cancel();
     _phoneCtrl.dispose();
     _addressCtrl.dispose();
     super.dispose();
   }
 
+  bool get _canCheckPhone => _checkSeconds == 0;
+
+  void _startCheckCooldown() {
+    _checkTimer?.cancel();
+    setState(() => _checkSeconds = 60);
+    _checkTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_checkSeconds <= 1) {
+        timer.cancel();
+        setState(() => _checkSeconds = 0);
+        return;
+      }
+      setState(() => _checkSeconds -= 1);
+    });
+  }
+
   Future<void> _checkPhone() async {
+    if (!_canCheckPhone) return;
     if (!_formKey.currentState!.validate()) return;
 
     final provider = context.read<OtaAccessProvider>();
@@ -35,6 +56,7 @@ class _RequestAccessScreenState extends State<RequestAccessScreen> {
     if (!mounted) return;
 
     if (error == null) {
+      _startCheckCooldown();
       setState(() => _phoneChecked = true);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -173,8 +195,9 @@ class _RequestAccessScreenState extends State<RequestAccessScreen> {
               if (v == null || v.trim().isEmpty) {
                 return 'Nomor telepon wajib diisi';
               }
-              if (v.trim().length < 10) {
-                return 'Nomor telepon tidak valid';
+              final phone = v.trim();
+              if (!RegExp(r'^08\d{8,11}$').hasMatch(phone)) {
+                return 'Format nomor tidak valid (08xx)';
               }
               return null;
             },
@@ -185,7 +208,7 @@ class _RequestAccessScreenState extends State<RequestAccessScreen> {
           width: double.infinity,
           height: 50,
           child: ElevatedButton(
-            onPressed: provider.loading ? null : _checkPhone,
+            onPressed: (provider.loading || !_canCheckPhone) ? null : _checkPhone,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
@@ -203,9 +226,11 @@ class _RequestAccessScreenState extends State<RequestAccessScreen> {
                       strokeWidth: 2.5,
                     ),
                   )
-                : const Text(
-                    'Cek Nomor',
-                    style: TextStyle(
+                : Text(
+                    _checkSeconds > 0
+                        ? 'Tunggu $_checkSeconds detik'
+                        : 'Cek Nomor',
+                    style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
@@ -343,6 +368,8 @@ class _RequestAccessScreenState extends State<RequestAccessScreen> {
         const SizedBox(height: 12),
         TextButton(
           onPressed: () {
+            _checkTimer?.cancel();
+            _checkSeconds = 0;
             provider.reset();
             setState(() {
               _phoneChecked = false;

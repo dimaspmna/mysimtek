@@ -162,7 +162,32 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  static final Map<String, List<DateTime>> _otpRequestLog = {};
+
+  static String? _checkOtpThrottle(String phone) {
+    final now = DateTime.now();
+    final cutoff = now.subtract(const Duration(hours: 1));
+    final history = _otpRequestLog[phone] ?? [];
+    _otpRequestLog[phone] = history.where((t) => t.isAfter(cutoff)).toList();
+
+    if (_otpRequestLog[phone]!.length >= 5) {
+      return 'Terlalu banyak permintaan OTP. Silakan coba lagi nanti.';
+    }
+    return null;
+  }
+
+  static void _recordOtpRequest(String phone) {
+    _otpRequestLog.putIfAbsent(phone, () => []).add(DateTime.now());
+  }
+
   Future<String?> requestOtp(String phone) async {
+    final throttleMsg = _checkOtpThrottle(phone);
+    if (throttleMsg != null) {
+      _error = throttleMsg;
+      notifyListeners();
+      return throttleMsg;
+    }
+
     _status = AuthStatus.loading;
     _error = null;
     _loadingMessage = 'Mengirim kode OTP…';
@@ -177,6 +202,7 @@ class AuthProvider extends ChangeNotifier {
         try {
           await _api.post(ApiConstants.otpRequest, body, auth: false);
           await _storage.saveIspId(isp['id']!);
+          _recordOtpRequest(phone);
           _status = AuthStatus.unauthenticated;
           _loadingMessage = null;
           notifyListeners();

@@ -42,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void _startResendCountdown() {
     _resendTimer?.cancel();
     setState(() {
-      _resendSeconds = 30;
+      _resendSeconds = 90;
     });
     _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_resendSeconds <= 1) {
@@ -398,8 +398,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                       if (v == null || v.trim().isEmpty) {
                                         return 'Nomor telepon wajib diisi';
                                       }
-                                      if (v.trim().length < 10) {
-                                        return 'Nomor telepon tidak valid';
+                                      final phone = v.trim();
+                                      if (!RegExp(r'^08\d{8,11}$').hasMatch(phone)) {
+                                        return 'Format nomor tidak valid (08xx)';
                                       }
                                       return null;
                                     },
