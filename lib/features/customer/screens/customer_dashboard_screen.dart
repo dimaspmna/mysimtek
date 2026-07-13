@@ -447,9 +447,10 @@ class _SkeletonBoxState extends State<_SkeletonBox>
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     );
-    _animation = Tween<double>(begin: 0.35, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0.35,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
     Future.delayed(Duration(milliseconds: widget.delayMs), () {
       if (mounted) _controller.repeat(reverse: true);
     });
@@ -466,10 +467,7 @@ class _SkeletonBoxState extends State<_SkeletonBox>
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
-        return Opacity(
-          opacity: _animation.value,
-          child: child,
-        );
+        return Opacity(opacity: _animation.value, child: child);
       },
       child: Container(
         height: widget.height,
@@ -679,7 +677,7 @@ class _QuickMenu extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (_) => const AppWebView(
                       title: 'Panduan Aplikasi',
-                      url: 'https://ofa.my.id',
+                      url: 'https://ofa.my.id/panduan-penggunaan',
                     ),
                   ),
                 ),
