@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/whatsapp_admin.dart';
@@ -28,6 +29,18 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscure = true;
   bool _otpRequested = false;
   _LoginMode _loginMode = _LoginMode.password;
+  String _appVersion = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    setState(() => _appVersion = info.version);
+  }
 
   @override
   void dispose() {
@@ -386,7 +399,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     onFieldSubmitted: (_) => _submit(),
                                     style: const TextStyle(fontSize: 15),
                                     decoration: _inputDecoration(
-                                      label: 'Nomor Telepon',
+                                      label: 'Nomor WhatsApp',
                                       prefix: const Icon(
                                         Icons.phone_outlined,
                                         size: 20,
@@ -399,7 +412,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                         return 'Nomor telepon wajib diisi';
                                       }
                                       final phone = v.trim();
-                                      if (!RegExp(r'^08\d{8,11}$').hasMatch(phone)) {
+                                      if (!RegExp(
+                                        r'^08\d{8,11}$',
+                                      ).hasMatch(phone)) {
                                         return 'Format nomor tidak valid (08xx)';
                                       }
                                       return null;
@@ -776,6 +791,16 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ],
                       ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Text(
+                    'v$_appVersion',
+                    style: const TextStyle(
+                      color: Color(0xFF94A3B8),
+                      fontSize: 12,
                     ),
                   ),
                 ),
