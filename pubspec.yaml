@@ -1,7 +1,7 @@
 name: mysimtek
-description: "OFA Mobile"
+description: "OFA Customer"
 publish_to: 'none'
-version: 1.8.3+7
+version: 1.8.4+8
 
 environment:
   sdk: ^3.10.8
