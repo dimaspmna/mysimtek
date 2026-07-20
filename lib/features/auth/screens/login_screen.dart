@@ -7,7 +7,10 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/whatsapp_admin.dart';
+import '../../../core/providers/app_update_provider.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/widgets/app_update_bottom_sheet.dart';
+import '../../../core/widgets/app_webview.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -40,6 +43,23 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _loadVersion() async {
     final info = await PackageInfo.fromPlatform();
     setState(() => _appVersion = info.version);
+    if (!mounted) return;
+    final updateProv = context.read<AppUpdateProvider>();
+    await updateProv.check();
+    _checkAndShowUpdate();
+  }
+
+  void _checkAndShowUpdate() {
+    if (!mounted) return;
+    final updateProv = context.read<AppUpdateProvider>();
+    if (updateProv.state == AppUpdateState.needsUpdate &&
+        updateProv.update != null) {
+      AppUpdateBottomSheet.show(
+        context,
+        update: updateProv.update!,
+        currentVersion: updateProv.currentVersion,
+      );
+    }
   }
 
   @override
@@ -347,7 +367,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     decoration: _inputDecoration(
                                       label: 'Email',
                                       prefix: const Icon(
-                                        Icons.person_outline,
+                                        Icons.mail_outline,
                                         size: 20,
                                         color: AppColors.textSecondary,
                                       ),
@@ -787,6 +807,40 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                               ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const AppWebView(
+                                    title: 'Panduan',
+                                    url: 'https://ofa.my.id/panduan',
+                                  ),
+                                ),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.primary,
+                                side: const BorderSide(
+                                  color: AppColors.primary,
+                                  width: 1.5,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: const Text(
+                                'Lihat Panduan',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
                           ),
                         ],

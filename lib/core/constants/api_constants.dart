@@ -19,6 +19,9 @@ class ApiConstants {
   /// Public storage URL (for serving uploaded files like PSB photos)
   static String get storageUrl => baseUrl.replaceFirst('/api', '');
 
+  // App Update
+  static const String appUpdate = '/app-update';
+
   // Auth
   static const String login = '/login';
   static const String otpRequest = '/login/otp-request';

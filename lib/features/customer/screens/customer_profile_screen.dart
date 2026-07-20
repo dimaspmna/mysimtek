@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_about.dart';
@@ -22,11 +23,20 @@ class CustomerProfileScreen extends StatefulWidget {
 class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
   bool _notificationActive = false;
   bool _isLoggingOut = false;
+  String _appVersion = '';
 
   @override
   void initState() {
     super.initState();
     _checkFcmStatus();
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() => _appVersion = info.version);
+    }
   }
 
   Future<void> _checkFcmStatus() async {
@@ -45,7 +55,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
-  static void _showTentangAplikasi(BuildContext context) {
+  void _showTentangAplikasi(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -112,7 +122,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                 children: [
                   _aboutRow('Nama Aplikasi', 'OFA Mobile'),
                   const SizedBox(height: 12),
-                  _aboutRow('Versi Aplikasi', AppVersion.version),
+                  _aboutRow('Versi Aplikasi', _appVersion),
                   const SizedBox(height: 12),
                   _aboutRow('Developer', 'Cogline Tech'),
                 ],
@@ -638,7 +648,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                     Column(
                       children: [
                         Text(
-                          '${AppVersion.appName} — VERSI ${AppVersion.version}',
+                          '${AppVersion.appName} — VERSI $_appVersion',
                           style: const TextStyle(
                             fontSize: 11,
                             color: AppColors.textSecondary,

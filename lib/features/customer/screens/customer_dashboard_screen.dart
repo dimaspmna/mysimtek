@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/providers/app_update_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/widgets/app_error_view.dart';
+import '../../../core/widgets/app_update_bottom_sheet.dart';
 import '../providers/customer_dashboard_provider.dart';
 import '../providers/ticket_provider.dart';
 import '../providers/notification_provider.dart';
@@ -25,6 +27,7 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
   late final NotificationProvider _notifProv;
   late final CustomerDashboardProvider _dashboardProv;
   final Set<int> _popUpShownForIds = {};
+  bool _updateSheetShown = false;
 
   @override
   void initState() {
@@ -37,7 +40,22 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
       _notifProv = context.read<NotificationProvider>();
       _notifProv.startPolling();
       context.read<TicketProvider>().loadTickets();
+      context.read<AppUpdateProvider>().check();
     });
+  }
+
+  void _checkAndShowUpdate() {
+    if (_updateSheetShown || !mounted) return;
+    final updateProv = context.read<AppUpdateProvider>();
+    if (updateProv.state == AppUpdateState.needsUpdate &&
+        updateProv.update != null) {
+      _updateSheetShown = true;
+      AppUpdateBottomSheet.show(
+        context,
+        update: updateProv.update!,
+        currentVersion: updateProv.currentVersion,
+      );
+    }
   }
 
   @override
@@ -147,6 +165,9 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
               if (mounted) _checkAndShowPopUp(d.popUpBanners);
             });
           }
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _checkAndShowUpdate();
+          });
           return RefreshIndicator(
             color: AppColors.primary,
             onRefresh: provider.load,

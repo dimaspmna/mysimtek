@@ -34,14 +34,14 @@ class ApiService {
 
   static const _timeout = Duration(seconds: 15);
 
-  Future<dynamic> get(String endpoint, {Map<String, String>? query}) async {
+  Future<dynamic> get(String endpoint, {Map<String, String>? query, bool auth = true}) async {
     var uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
     if (query != null && query.isNotEmpty) {
       uri = uri.replace(queryParameters: query);
     }
     try {
       final res = await http
-          .get(uri, headers: await _headers())
+          .get(uri, headers: await _headers(auth: auth))
           .timeout(_timeout);
       return _parse(res);
     } on SocketException {

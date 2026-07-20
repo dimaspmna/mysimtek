@@ -5,26 +5,11 @@ class SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset('assets/images/splash_screen.png', fit: BoxFit.cover),
-          const Positioned(
-            bottom: 48,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
+          Image(image: AssetImage('assets/images/splash_screen.png'), fit: BoxFit.cover),
         ],
       ),
     );
