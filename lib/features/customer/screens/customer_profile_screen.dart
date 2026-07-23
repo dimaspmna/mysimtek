@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../core/constants/app_about.dart';
 import '../../../core/constants/app_version.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/whatsapp_help.dart';
+import '../../../core/constants/whatsapp_admin.dart';
 import '../../../core/providers/auth_provider.dart';
-import '../../../core/services/fcm_service.dart';
+import '../../../core/providers/app_update_provider.dart';
+import '../../../core/services/storage_service.dart';
 import '../../../core/widgets/app_loading.dart';
+import '../../../core/widgets/app_update_bottom_sheet.dart';
 import '../../../core/widgets/app_webview.dart';
 import 'change_password_screen.dart';
 import 'detail_akun_screen.dart';
@@ -21,15 +22,15 @@ class CustomerProfileScreen extends StatefulWidget {
 }
 
 class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
-  bool _notificationActive = false;
   bool _isLoggingOut = false;
   String _appVersion = '';
+  String? _ispId;
 
   @override
   void initState() {
     super.initState();
-    _checkFcmStatus();
     _loadVersion();
+    _loadIspId();
   }
 
   Future<void> _loadVersion() async {
@@ -39,42 +40,28 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
     }
   }
 
-  Future<void> _checkFcmStatus() async {
-    final token = await FcmService.getToken();
+  Future<void> _loadIspId() async {
+    final id = await StorageService().getIspId();
     if (mounted) {
-      setState(() {
-        _notificationActive = token != null && token.isNotEmpty;
-      });
+      setState(() => _ispId = id);
     }
   }
 
-  static Future<void> _launchWA(String number, String message) async {
-    final uri = Uri.parse(
-      'https://wa.me/$number?text=${Uri.encodeComponent(message)}',
-    );
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
-
-  void _showTentangAplikasi(BuildContext context) {
+  void _showNotifikasiInfo(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.85,
-        ),
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 12, bottom: 8),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
                 child: Container(
                   width: 40,
                   height: 4,
@@ -84,142 +71,226 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                   ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-              child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF6B00),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.info_outline,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'Tentang Aplikasi',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B),
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 24),
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF16A34A).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  Icons.notifications_active,
+                  color: Color(0xFF16A34A),
+                  size: 32,
+                ),
               ),
-            ),
-            const Divider(height: 24, color: Color(0xFFF1F5F9)),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _aboutRow('Nama Aplikasi', 'OFA Mobile'),
-                  const SizedBox(height: 12),
-                  _aboutRow('Versi Aplikasi', _appVersion),
-                  const SizedBox(height: 12),
-                  _aboutRow('Developer', 'Cogline Tech'),
-                ],
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 20, 20, 8),
-              child: Text(
-                'Apa yang baru:',
+              const SizedBox(height: 16),
+              const Text(
+                'Notifikasi Aktif',
                 style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
                   color: Color(0xFF1E293B),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: AppAbout.features.asMap().entries.map((e) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          margin: const EdgeInsets.only(top: 4),
-                          width: 6,
-                          height: 6,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFFF6B00),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            e.value,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF475569),
-                              height: 1.5,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
+              const SizedBox(height: 8),
+              const Text(
+                'Notifikasi Anda aktif. Anda akan menerima pemberitahuan terkait tagihan, tiket, dan pengumuman.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF94A3B8),
+                  height: 1.5,
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-              child: SizedBox(
+              const SizedBox(height: 24),
+              SizedBox(
                 width: double.infinity,
+                height: 50,
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF6B00),
+                    backgroundColor: const Color(0xFF16A34A),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     elevation: 0,
                   ),
                   child: const Text(
                     'Tutup',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  static Widget _aboutRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+  static Future<void> _launchWA(String number, String message) async {
+    final uri = Uri.parse(
+      'https://wa.me/$number?text=${Uri.encodeComponent(message)}',
+    );
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _showUpdateAplikasi() async {
+    final updateProv = context.read<AppUpdateProvider>();
+    await updateProv.check();
+    if (!mounted) return;
+
+    if (updateProv.state == AppUpdateState.needsUpdate &&
+        updateProv.update != null) {
+      AppUpdateBottomSheet.show(
+        context,
+        update: updateProv.update!,
+        currentVersion: updateProv.currentVersion,
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    final isUpToDate = updateProv.state == AppUpdateState.upToDate;
+    final message = isUpToDate
+        ? 'Versi aplikasi sudah yang terbaru.'
+        : 'Gagal memeriksa update. Silakan coba lagi.';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF1E293B),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color:
+                      (isUpToDate
+                              ? const Color(0xFF0F766E)
+                              : const Color(0xFFDC2626))
+                          .withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  isUpToDate ? Icons.check_circle_outline : Icons.error_outline,
+                  color: isUpToDate
+                      ? const Color(0xFF0F766E)
+                      : const Color(0xFFDC2626),
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                isUpToDate ? 'Versi Sudah Terbaru' : 'Gagal',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF94A3B8),
+                  height: 1.5,
+                ),
+              ),
+              if (updateProv.currentVersion.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Versi Saat Ini',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Text(
+                          updateProv.currentVersion,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1E293B),
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isUpToDate
+                        ? const Color(0xFF0F766E)
+                        : AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Tutup',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 
@@ -348,72 +419,8 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.cardBorder),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: _notificationActive
-                                    ? const Color(0xFF16A34A)
-                                    : const Color(0xFF94A3B8),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.notifications_outlined,
-                                color: Colors.white,
-                                size: 16,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Notifikasi',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    _notificationActive ? 'Aktif' : 'Nonaktif',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: _notificationActive
-                                          ? const Color(0xFF16A34A)
-                                          : const Color(0xFF94A3B8),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Icon(
-                              _notificationActive
-                                  ? Icons.check_circle
-                                  : Icons.cancel,
-                              size: 18,
-                              color: _notificationActive
-                                  ? const Color(0xFF16A34A)
-                                  : const Color(0xFF94A3B8),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    // --- Bantuan ---
+                    const _SectionLabel(label: 'BANTUAN'),
                     const SizedBox(height: 8),
                     Container(
                       decoration: BoxDecoration(
@@ -428,11 +435,11 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                           children: [
                             _menuTile(
                               icon: Icons.headset_mic_outlined,
-                              label: 'Bantuan Aplikasi',
+                              label: 'Bantuan CS 24 Jam',
                               bgColor: const Color(0xFF1E88E5),
                               onTap: () => _launchWA(
-                                WhatsappHelp.helpdesk,
-                                'Hallo Tim IT Cogline, saya ${user.name} terkendala terkait penggunaan aplikasi OFA Mobile. Mohon bantuannya ya.',
+                                WhatsappAdmin.csForIsp(_ispId),
+                                'Halo Admin, saya butuh bantuan terkait layanan OFA Customer.',
                               ),
                               isFirst: true,
                             ),
@@ -441,30 +448,34 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                               color: AppColors.cardBorder,
                             ),
                             _menuTile(
-                              icon: Icons.info_outline,
-                              label: 'Tentang Aplikasi',
-                              bgColor: const Color(0xFFFF6B00),
-                              onTap: () => _showTentangAplikasi(context),
-                            ),
-                            const Divider(
-                              height: 1,
-                              color: AppColors.cardBorder,
-                            ),
-                            _menuTile(
-                              icon: Icons.lock_outline,
-                              label: 'Reset Password',
-                              bgColor: const Color(0xFF00897B),
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const ChangePasswordScreen(),
-                                ),
+                              icon: Icons.developer_mode,
+                              label: 'Bantuan Developer',
+                              bgColor: const Color(0xFF43A047),
+                              onTap: () => _launchWA(
+                                WhatsappAdmin.developer,
+                                'Halo Admin Cogline, saya butuh bantuan terkait kendala aplikasi OFA Customer.',
                               ),
+                              isLast: true,
                             ),
-                            const Divider(
-                              height: 1,
-                              color: AppColors.cardBorder,
-                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    // --- Tentang Aplikasi ---
+                    const _SectionLabel(label: 'TENTANG APLIKASI'),
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.cardBorder),
+                      ),
+                      child: Material(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          children: [
                             _menuTile(
                               icon: Icons.privacy_tip_outlined,
                               label: 'Kebijakan Privasi',
@@ -474,11 +485,21 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                                 MaterialPageRoute(
                                   builder: (_) => const AppWebView(
                                     title: 'Kebijakan Privasi',
-                                    url:
-                                        'https://billing.simtek.co.id/privacy-policy',
+                                    url: 'https://ofa.my.id/kebijakan-privasi',
                                   ),
                                 ),
                               ),
+                              isFirst: true,
+                            ),
+                            const Divider(
+                              height: 1,
+                              color: AppColors.cardBorder,
+                            ),
+                            _menuTile(
+                              icon: Icons.system_update_alt,
+                              label: 'Update Aplikasi',
+                              bgColor: const Color(0xFFFF6B00),
+                              onTap: _showUpdateAplikasi,
                             ),
                             const Divider(
                               height: 1,
@@ -495,6 +516,48 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                                     title: 'Website Resmi',
                                     url: 'https://ofa.my.id',
                                   ),
+                                ),
+                              ),
+                              isLast: true,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    // --- Lainnya ---
+                    const _SectionLabel(label: 'LAINNYA'),
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.cardBorder),
+                      ),
+                      child: Material(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          children: [
+                            _menuTile(
+                              icon: Icons.notifications_active,
+                              label: 'Notifikasi Anda Aktif',
+                              bgColor: const Color(0xFF16A34A),
+                              onTap: () => _showNotifikasiInfo(context),
+                              isFirst: true,
+                            ),
+                            const Divider(
+                              height: 1,
+                              color: AppColors.cardBorder,
+                            ),
+                            _menuTile(
+                              icon: Icons.lock_outline,
+                              label: 'Reset Password',
+                              bgColor: const Color(0xFF00897B),
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const ChangePasswordScreen(),
                                 ),
                               ),
                             ),
@@ -769,4 +832,25 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
 
   Widget _divider() =>
       const Divider(height: 1, indent: 52, color: AppColors.cardBorder);
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String label;
+  const _SectionLabel({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textSecondary,
+          letterSpacing: 1,
+        ),
+      ),
+    );
+  }
 }

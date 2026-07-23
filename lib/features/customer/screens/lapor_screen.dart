@@ -277,11 +277,15 @@ class _TicketCard extends StatelessWidget {
                               ),
                               const SizedBox(width: 8),
                             ],
-                            Text(
-                              ticket.categoryLabel,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: AppColors.textSecondary,
+                            Flexible(
+                              child: Text(
+                                ticket.categoryLabel,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.textSecondary,
+                                ),
                               ),
                             ),
                           ],

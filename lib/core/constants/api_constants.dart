@@ -8,10 +8,13 @@ class ApiConstants {
       "https://mysimtek.coglinetech.com/api";
   static const _pastelindo =
       "https://mypastelindo.coglinetech.com/api";
+  static const _wimanet =
+      "https://ofa.wifihemat.com/api";
 
   static const List<Map<String, String>> ispList = [
     {'id': 'simtek', 'name': 'SIMTEK', 'baseUrl': _simtek},
     {'id': 'pastelindo', 'name': 'PASTELINDO', 'baseUrl': _pastelindo},
+    {'id': 'wimanet', 'name': 'WIMANET', 'baseUrl': _wimanet},
   ];
 
   static String baseUrl = _simtek;

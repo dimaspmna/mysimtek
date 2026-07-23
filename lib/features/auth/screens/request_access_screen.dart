@@ -79,7 +79,7 @@ class _RequestAccessScreenState extends State<RequestAccessScreen> {
         'Alamat: $address';
 
     final uri = Uri.parse(
-      'https://wa.me/${WhatsappAdmin.billing}?text=${Uri.encodeComponent(message)}',
+      'https://wa.me/${WhatsappAdmin.developer}?text=${Uri.encodeComponent(message)}',
     );
 
     if (await canLaunchUrl(uri)) {

@@ -285,16 +285,16 @@ class _NotificationTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: item.isRead ? Colors.white : AppColors.primary,
+          color: item.isRead ? Colors.white : const Color(0xFFFFF7ED),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: item.isRead ? const Color(0xFFF1F5F9) : AppColors.primary,
+            color: item.isRead ? const Color(0xFFF1F5F9) : const Color(0xFFFFE0C0),
           ),
           boxShadow: [
             BoxShadow(
               color: item.isRead
                   ? const Color(0xFF0F172A).withOpacity(0.04)
-                  : AppColors.primary.withOpacity(0.30),
+                  : AppColors.primary.withOpacity(0.10),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -309,13 +309,13 @@ class _NotificationTile extends StatelessWidget {
               decoration: BoxDecoration(
                 color: item.isRead
                     ? const Color(0xFFF1F5F9)
-                    : Colors.white.withOpacity(0.20),
+                    : AppColors.primary.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 _icon,
                 size: 18,
-                color: item.isRead ? const Color(0xFF94A3B8) : Colors.white,
+                color: item.isRead ? const Color(0xFF94A3B8) : AppColors.primary,
               ),
             ),
             const SizedBox(width: 12),
@@ -335,7 +335,7 @@ class _NotificationTile extends StatelessWidget {
                                 : FontWeight.bold,
                             color: item.isRead
                                 ? const Color(0xFF1E293B)
-                                : Colors.white,
+                                : const Color(0xFF1E293B),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -347,7 +347,7 @@ class _NotificationTile extends StatelessWidget {
                           height: 8,
                           margin: const EdgeInsets.only(left: 6),
                           decoration: const BoxDecoration(
-                            color: Colors.white,
+                            color: AppColors.primary,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -360,9 +360,9 @@ class _NotificationTile extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 12,
-                      color: item.isRead
-                          ? const Color(0xFF64748B)
-                          : Colors.white.withOpacity(0.85),
+                          color: item.isRead
+                              ? const Color(0xFF64748B)
+                              : const Color(0xFF64748B),
                       height: 1.4,
                     ),
                   ),
@@ -371,9 +371,9 @@ class _NotificationTile extends StatelessWidget {
                     _formatDate(item.createdAt),
                     style: TextStyle(
                       fontSize: 10,
-                      color: item.isRead
-                          ? const Color(0xFF94A3B8)
-                          : Colors.white.withOpacity(0.65),
+                          color: item.isRead
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF94A3B8),
                     ),
                   ),
                 ],

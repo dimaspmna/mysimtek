@@ -138,7 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
       'Halo, saya mengalami kendala saat masuk ke aplikasi OFA Mobile. Mohon bantuannya.',
     );
     final uri = Uri.parse(
-      'https://wa.me/${WhatsappAdmin.helpdesk}?text=$message',
+      'https://wa.me/${WhatsappAdmin.developer}?text=$message',
     );
 
     if (await canLaunchUrl(uri)) {

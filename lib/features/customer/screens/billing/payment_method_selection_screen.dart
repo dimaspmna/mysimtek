@@ -25,11 +25,13 @@ class _PaymentMethodSelectionScreenState
 
   @override
   Widget build(BuildContext context) {
-    final customerPayment =
-        context.watch<BillingProvider>().activeBilling?.customerPayment;
+    final customerPayment = context
+        .watch<BillingProvider>()
+        .activeBilling
+        ?.customerPayment;
 
-    final bool midtransDisabled = customerPayment?.isBriva ?? false;
-    final bool brivaDisabled = customerPayment?.isMidtrans ?? false;
+    final bool isBrivaCustomer = customerPayment?.isBriva ?? false;
+    final bool isMidtransCustomer = customerPayment?.isMidtrans ?? false;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -53,47 +55,46 @@ class _PaymentMethodSelectionScreenState
             style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
           ),
           const SizedBox(height: 16),
-          _PaymentMethodCard(
-            imageAsset: 'assets/icon/payment-method/icon_midtrans.png',
-            title: 'Midtrans',
-            subtitle: 'Bayar via Virtual Account, GoPay, QRIS, dan lainnya',
-            disabled: midtransDisabled,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const BillingScreen()),
-              );
-            },
-            onDisabledTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Hanya bisa dilakukan melalui BRIVA saja'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 12),
-          _PaymentMethodCard(
-            imageAsset: 'assets/icon/payment-method/icon_briva.png',
-            title: 'BRIVA',
-            subtitle: 'Bayar melalui BRI Virtual Account (BRIVA)',
-            disabled: brivaDisabled,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const BrivaScreen()),
-              );
-            },
-            onDisabledTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Hanya bisa pembayaran melalui Midtrans saja'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-          ),
+          if (!isBrivaCustomer)
+            _PaymentMethodCard(
+              imageAsset: 'assets/icon/payment-method/icon_midtrans.png',
+              title: 'Midtrans',
+              subtitle: 'Bayar via Virtual Account, GoPay, QRIS, dan lainnya',
+              disabled: false,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const BillingScreen()),
+                );
+              },
+            ),
+          if (isBrivaCustomer || !isMidtransCustomer) ...[
+            if (isBrivaCustomer) const SizedBox(height: 12),
+            _PaymentMethodCard(
+              imageAsset: 'assets/icon/payment-method/icon_wimanet.png',
+              title: 'Online (QRIS / Transfer Bank Mandiri)',
+              subtitle: isBrivaCustomer
+                  ? 'Scan QRIS atau Transfer ke Bank Mandiri'
+                  : 'Bayar melalui BRI Virtual Account (BRIVA)',
+              disabled: isBrivaCustomer ? false : isMidtransCustomer,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const BrivaScreen()),
+                );
+              },
+              onDisabledTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Hanya bisa pembayaran melalui Midtrans saja',
+                    ),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+            ),
+          ],
         ],
       ),
     );

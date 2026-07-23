@@ -1,5 +1,13 @@
 class WhatsappAdmin {
-  static const String billing = '6282111856200';
-  static const String support = '6282123376300';
-  static const String helpdesk = '628976385872';
+  static const String developer = '628976385872';
+
+  static const Map<String, String> csPerIsp = {
+    'simtek': '6282123376300',
+    'pastelindo': '6281111166200',
+    'wimanet': '6281122839191',
+  };
+
+  static String csForIsp(String? ispId) {
+    return csPerIsp[ispId] ?? '6282123376300';
+  }
 }

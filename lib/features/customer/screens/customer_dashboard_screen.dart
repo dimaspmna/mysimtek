@@ -542,7 +542,7 @@ class _StatisticsSection extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: _StatCard(
-            label: 'Komplain',
+            label: 'Laporan',
             value: openComplaints.toString(),
             icon: Icons.report_problem_rounded,
             accentColor: const Color(0xFFFF6B00),

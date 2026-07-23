@@ -77,7 +77,7 @@ class _DetailAkunScreenState extends State<DetailAkunScreen> {
       case 'midtrans':
         return 'Online (Midtrans)';
       case 'briva':
-        return 'BRIVA';
+        return 'Online (QRIS / TF Mandiri)';
       default:
         return method ?? '-';
     }
