@@ -34,10 +34,17 @@ class _LoginScreenState extends State<LoginScreen> {
   _LoginMode _loginMode = _LoginMode.password;
   String _appVersion = '';
 
+  // Inline phone validation state
+  bool _isPhoneChecking = false;
+  bool? _phoneRegistered;
+  String? _phoneCheckMessage;
+  Timer? _phoneCheckDebounce;
+
   @override
   void initState() {
     super.initState();
     _loadVersion();
+    _phoneCtrl.addListener(_onPhoneChanged);
   }
 
   Future<void> _loadVersion() async {
@@ -65,6 +72,8 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void dispose() {
     _resendTimer?.cancel();
+    _phoneCheckDebounce?.cancel();
+    _phoneCtrl.removeListener(_onPhoneChanged);
     _emailCtrl.dispose();
     _passCtrl.dispose();
     _phoneCtrl.dispose();
@@ -84,6 +93,39 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
       setState(() => _resendSeconds -= 1);
+    });
+  }
+
+  void _onPhoneChanged() {
+    _phoneCheckDebounce?.cancel();
+    final raw = _phoneCtrl.text.trim();
+    if (raw.isEmpty || !RegExp(r'^08\d{8,11}$').hasMatch(raw)) {
+      setState(() {
+        _isPhoneChecking = false;
+        _phoneRegistered = null;
+        _phoneCheckMessage = null;
+      });
+      return;
+    }
+    setState(() => _isPhoneChecking = true);
+    _phoneCheckDebounce = Timer(const Duration(milliseconds: 500), () async {
+      final auth = context.read<AuthProvider>();
+      final result = await auth.checkPhone(raw);
+      if (!mounted) return;
+      setState(() {
+        _isPhoneChecking = false;
+        _phoneRegistered = result.registered;
+        _phoneCheckMessage = result.message;
+      });
+    });
+  }
+
+  void _clearPhoneCheck() {
+    _phoneCheckDebounce?.cancel();
+    setState(() {
+      _isPhoneChecking = false;
+      _phoneRegistered = null;
+      _phoneCheckMessage = null;
     });
   }
 
@@ -348,6 +390,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     _otpCtrl.clear();
                                     _resendTimer?.cancel();
                                     _resendSeconds = 0;
+                                    _clearPhoneCheck();
                                   }),
                                 ),
                               ),
@@ -425,22 +468,25 @@ class _LoginScreenState extends State<LoginScreen> {
                                         size: 20,
                                         color: AppColors.textSecondary,
                                       ),
+                                      suffix: _phoneSuffixIcon(),
                                       hintText: '0812xxxxxxx',
                                     ),
                                     validator: (v) {
                                       if (v == null || v.trim().isEmpty) {
-                                        return 'Nomor telepon wajib diisi';
+                                        return 'Nomor WhatsApp wajib diisi';
                                       }
-                                      final phone = v.trim();
                                       if (!RegExp(
                                         r'^08\d{8,11}$',
-                                      ).hasMatch(phone)) {
+                                      ).hasMatch(v.trim())) {
                                         return 'Format nomor tidak valid (08xx)';
                                       }
                                       return null;
                                     },
                                   ),
-                                  const SizedBox(height: 10),
+                                  const SizedBox(height: 4),
+                                  if (_phoneRegistered != null)
+                                    _phoneStatusBanner(),
+                                  const SizedBox(height: 6),
                                   if (_loginMode == _LoginMode.otp) ...[
                                     AnimatedSwitcher(
                                       duration: const Duration(
@@ -787,8 +833,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       elevation: 0,
                                     ),
                                     child:
-                                        isLoading &&
-                                            _loginMode != _LoginMode.otp
+                                        isLoading
                                         ? const SizedBox(
                                             width: 20,
                                             height: 20,
@@ -797,9 +842,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                               strokeWidth: 2.5,
                                             ),
                                           )
-                                        : const Text(
-                                            'Masuk',
-                                            style: TextStyle(
+                                        : Text(
+                                            _loginMode == _LoginMode.otp
+                                                ? (_otpRequested
+                                                    ? 'Verifikasi'
+                                                    : 'Kirim OTP')
+                                                : 'Masuk',
+                                            style: const TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -860,6 +909,102 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget? _phoneSuffixIcon() {
+    if (_isPhoneChecking) {
+      return const Padding(
+        padding: EdgeInsets.all(12),
+        child: SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+    if (_phoneRegistered == true) {
+      return const Padding(
+        padding: EdgeInsets.all(12),
+        child: Icon(Icons.check_circle, color: Colors.green, size: 22),
+      );
+    }
+    if (_phoneRegistered == false) {
+      return const Padding(
+        padding: EdgeInsets.all(12),
+        child: Icon(Icons.cancel, color: Colors.red, size: 22),
+      );
+    }
+    return null;
+  }
+
+  Widget _phoneStatusBanner() {
+    final isRegistered = _phoneRegistered == true;
+    final hasApiError = _phoneCheckMessage != null;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: isRegistered
+            ? Colors.green.withValues(alpha: 0.08)
+            : AppColors.error.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            isRegistered ? Icons.check_circle_outline : Icons.error_outline,
+            size: 16,
+            color: isRegistered ? Colors.green : AppColors.error,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: isRegistered
+                ? const Text(
+                    'Nomor WhatsApp terdaftar',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.green,
+                    ),
+                  )
+                : hasApiError
+                    ? Text(
+                        _phoneCheckMessage!,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.error,
+                        ),
+                      )
+                    : GestureDetector(
+                        onTap: _openWhatsAppHelp,
+                        child: RichText(
+                          text: TextSpan(
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.error,
+                            ),
+                            children: [
+                              const TextSpan(
+                                text: 'Nomor tidak terdaftar, ',
+                              ),
+                              TextSpan(
+                                text: 'hubungi bantuan',
+                                style: TextStyle(
+                                  decoration: TextDecoration.underline,
+                                  color: AppColors.error.withValues(alpha: 0.8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
           ),
         ],
       ),

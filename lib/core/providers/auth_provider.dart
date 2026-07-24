@@ -166,13 +166,26 @@ class AuthProvider extends ChangeNotifier {
 
   static String? _checkOtpThrottle(String phone) {
     final now = DateTime.now();
-    final cutoff = now.subtract(const Duration(hours: 1));
+    final cutoff24h = now.subtract(const Duration(hours: 24));
     final history = _otpRequestLog[phone] ?? [];
-    _otpRequestLog[phone] = history.where((t) => t.isAfter(cutoff)).toList();
+    _otpRequestLog[phone] =
+        history.where((t) => t.isAfter(cutoff24h)).toList();
 
-    if (_otpRequestLog[phone]!.length >= 5) {
-      return 'Terlalu banyak permintaan OTP. Silakan coba lagi nanti.';
+    // Maksimal 3x request per 24 jam (Fonnte anti-ban)
+    if (_otpRequestLog[phone]!.length >= 3) {
+      return 'Terlalu banyak permintaan OTP. Coba lagi besok.';
     }
+
+    // Cooldown 60 detik antar request
+    if (_otpRequestLog[phone]!.isNotEmpty) {
+      final lastSent = _otpRequestLog[phone]!.last;
+      final elapsed = now.difference(lastSent).inSeconds;
+      if (elapsed < 60) {
+        final wait = 60 - elapsed;
+        return 'Tunggu $wait detik sebelum kirim ulang OTP.';
+      }
+    }
+
     return null;
   }
 
@@ -190,7 +203,7 @@ class AuthProvider extends ChangeNotifier {
 
     _status = AuthStatus.loading;
     _error = null;
-    _loadingMessage = 'Mengirim kode OTP…';
+    _loadingMessage = 'Memeriksa nomor WhatsApp…';
     notifyListeners();
     try {
       final payload = await _prepareLoginPayload();
@@ -227,6 +240,27 @@ class AuthProvider extends ChangeNotifier {
       _loadingMessage = null;
       notifyListeners();
       return _error;
+    }
+  }
+
+  Future<({bool registered, String? message})> checkPhone(String phone) async {
+    try {
+      final res = await _api.post(
+        ApiConstants.checkPhone,
+        {'phone': phone},
+        auth: false,
+      );
+      final registered = res['registered'] == true;
+      return (registered: registered, message: null);
+    } on ApiException catch (e) {
+      if (e.message.contains('tidak terdaftar') ||
+          e.message.contains('not found') ||
+          e.statusCode == 404) {
+        return (registered: false, message: null);
+      }
+      return (registered: false, message: 'Gagal memeriksa nomor');
+    } catch (_) {
+      return (registered: false, message: 'Gagal memeriksa nomor');
     }
   }
 
