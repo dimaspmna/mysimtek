@@ -18,6 +18,12 @@
 -dontwarn com.google.firebase.**
 -dontwarn com.google.android.gms.**
 
+# FCM specific — R8 often strips messaging/iid classes needed for token registration
+-keep class com.google.firebase.messaging.** { *; }
+-keep class com.google.firebase.installations.** { *; }
+-keep class com.google.firebase.iid.** { *; }
+-keep class com.google.android.gms.tasks.** { *; }
+
 # Keep attributes needed for Firebase serialization
 -keepattributes *Annotation*
 -keepattributes EnclosingMethod

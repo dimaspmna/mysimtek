@@ -72,9 +72,12 @@ class AuthProvider extends ChangeNotifier {
     // Request notification permission first (Android 13+)
     await FcmService.requestPermission();
 
+    // Give Google Play Services time to establish FCM connection
+    await Future.delayed(const Duration(seconds: 5));
+
     // Get FCM token with retries (token may not be immediately available after permission grant)
     String? fcmToken;
-    for (int attempt = 1; attempt <= 3; attempt++) {
+    for (int attempt = 1; attempt <= 5; attempt++) {
       try {
         fcmToken = await FcmService.getToken();
       } catch (e) {
@@ -82,15 +85,15 @@ class AuthProvider extends ChangeNotifier {
       }
       if (fcmToken != null) break;
       debugPrint('[Auth] Attempt $attempt: FCM token is null, retrying...');
-      if (attempt < 3) {
-        await Future.delayed(Duration(seconds: 2 * attempt));
+      if (attempt < 5) {
+        await Future.delayed(Duration(seconds: 3 * attempt));
       }
     }
 
     if (fcmToken == null) {
       try {
         fcmToken = await FcmService.waitForToken(
-          timeout: const Duration(seconds: 10),
+          timeout: const Duration(seconds: 15),
         );
         debugPrint('[Auth] FCM token received from refresh event: $fcmToken');
       } catch (e) {
