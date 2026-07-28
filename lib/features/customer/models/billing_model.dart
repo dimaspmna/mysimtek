@@ -30,6 +30,7 @@ class CustomerPaymentInfo {
 
   bool get isMidtrans => method == 'midtrans';
   bool get isBriva => method == 'briva';
+  bool get isWimanet => method == 'wimanet';
 
   factory CustomerPaymentInfo.fromJson(Map<String, dynamic> json) =>
       CustomerPaymentInfo(

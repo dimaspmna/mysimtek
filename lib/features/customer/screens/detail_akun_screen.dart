@@ -31,10 +31,13 @@ class _DetailAkunScreenState extends State<DetailAkunScreen> {
         ApiConstants.customerProfile,
       );
       final customer = res['customer'] as Map<String, dynamic>?;
+      final customerPayment = res['customer_payment'] as Map<String, dynamic>?;
       if (customer != null && mounted) {
         setState(() {
           _address = customer['address']?.toString();
-          _paymentMethod = customer['payment_method']?.toString();
+          _paymentMethod =
+              customerPayment?['method']?.toString() ??
+              customer['payment_method']?.toString();
           _customerStatus = customer['customer_status']?.toString();
           _loading = false;
         });
@@ -77,6 +80,8 @@ class _DetailAkunScreenState extends State<DetailAkunScreen> {
       case 'midtrans':
         return 'Online (Midtrans)';
       case 'briva':
+        return 'BRIVA (BRI Virtual Account)';
+      case 'wimanet':
         return 'Online (QRIS / TF Mandiri)';
       default:
         return method ?? '-';
@@ -236,7 +241,11 @@ class _DetailAkunScreenState extends State<DetailAkunScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline, color: AppColors.error, size: 16),
+                    const Icon(
+                      Icons.error_outline,
+                      color: AppColors.error,
+                      size: 16,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(

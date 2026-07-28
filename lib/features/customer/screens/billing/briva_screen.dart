@@ -230,9 +230,20 @@ class _BrivaScreenState extends State<BrivaScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
-          'Pembayaran Online',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        title: Consumer<BillingProvider>(
+          builder: (context, prov, _) {
+            final payment = prov.activeBilling?.customerPayment;
+            final isBriva = payment?.isBriva ?? false;
+            final isWimanet = payment?.isWimanet ?? false;
+            return Text(
+              isBriva
+                  ? 'Pembayaran BRIVA'
+                  : isWimanet
+                  ? 'Pembayaran Online'
+                  : 'Pembayaran',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            );
+          },
         ),
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimary,
@@ -252,6 +263,7 @@ class _BrivaScreenState extends State<BrivaScreen> {
 
           final paymentInfo = prov.activeBilling?.customerPayment;
           final isBrivaCustomer = paymentInfo?.isBriva ?? false;
+          final isWimanetCustomer = paymentInfo?.isWimanet ?? false;
           final invoices = (prov.activeBilling?.invoices ?? [])
               .where((inv) => !inv.isPaid)
               .toList();
@@ -272,23 +284,82 @@ class _BrivaScreenState extends State<BrivaScreen> {
             });
           }
 
-          if (!isBrivaCustomer) {
-            return ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _buildHeaderCard(),
-                const SizedBox(height: 20),
-                _buildEmptyState(),
-              ],
-            );
-          }
-
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              _buildHeaderCard(),
-              const SizedBox(height: 16),
-              _buildPaymentInfoCard(),
+              if (isBrivaCustomer) ...[
+                _buildBrivaInfoCard(
+                  vaNumber: paymentInfo?.number,
+                  channel: paymentInfo?.channel,
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0F9FF),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFBAE6FD)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.info_outline_rounded,
+                        size: 18,
+                        color: Color(0xFF0369A1),
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'Silakan salin nomor BRIVA kemudian lakukan pembayaran terlebih dahulu, setelah itu upload bukti pembayaran dapat berupa screenshot atau Foto struk pembayaran.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF0369A1),
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              if (isWimanetCustomer) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0F9FF),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFBAE6FD)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.info_outline_rounded,
+                        size: 18,
+                        color: Color(0xFF0369A1),
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'Silakan pilih salah satu dari metode pembayaran yang ada di bawah ini, lalu upload bukti pembayarannya!',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF0369A1),
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildQrisCard(),
+                const SizedBox(height: 16),
+                _buildBankTransferCard(),
+              ],
               if (invoices.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 const Text(
@@ -314,7 +385,7 @@ class _BrivaScreenState extends State<BrivaScreen> {
     );
   }
 
-  Widget _buildHeaderCard() {
+  Widget _buildBrivaHeaderCard() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -329,7 +400,7 @@ class _BrivaScreenState extends State<BrivaScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Pembayaran Online',
+                  'Pembayaran BRIVA',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -338,7 +409,7 @@ class _BrivaScreenState extends State<BrivaScreen> {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  'QRIS / Transfer Bank Mandiri',
+                  'BRI Virtual Account',
                   style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
                 ),
               ],
@@ -352,7 +423,7 @@ class _BrivaScreenState extends State<BrivaScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
-              Icons.qr_code_scanner_rounded,
+              Icons.account_balance_rounded,
               color: AppColors.primary,
               size: 24,
             ),
@@ -362,53 +433,9 @@ class _BrivaScreenState extends State<BrivaScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Icon(
-              Icons.info_outline_rounded,
-              color: Color(0xFF94A3B8),
-              size: 32,
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Pembayaran Online tidak tersedia',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1E293B),
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Hanya bisa melakukan pembayaran lewat Midtrans saja.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPaymentInfoCard() {
-    const bankAccount = '1770025908846';
-    const bankName = 'a.n. Sarastiani Ratna Adianti';
+  Widget _buildBrivaInfoCard({String? vaNumber, String? channel}) {
+    final va = vaNumber ?? '-';
+    final bank = channel?.toUpperCase() ?? 'BRI';
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -425,79 +452,211 @@ class _BrivaScreenState extends State<BrivaScreen> {
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildQrisSection(),
-          const Divider(height: 32, color: Color(0xFFE2E8F0)),
-          _buildBankTransferSection(bankAccount, bankName),
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(6),
+                  child: Image.asset(
+                    'assets/icon/payment-method/icon_briva.png',
+                    width: 24,
+                    height: 24,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'BRI Virtual Account',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E293B),
+                      ),
+                    ),
+                    Text(
+                      'Transfer ke nomor Virtual Account BRI',
+                      style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Column(
+              children: [
+                const Text(
+                  'Nomor Virtual Account',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  va,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1E293B),
+                    letterSpacing: 2,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  bank,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Clipboard.setData(ClipboardData(text: va));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Nomor Virtual Account berhasil disalin',
+                          ),
+                          backgroundColor: Color(0xFF0F766E),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.copy_rounded, size: 18),
+                    label: const Text(
+                      'Salin Nomor VA',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
   static const Color _qrisBg = Color(0xFFF5F3FF);
-  static const Color _qrisBorder = Color(0xFFDDD6FE);
 
-  Widget _buildQrisSection() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: _qrisBg,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.qr_code_scanner_rounded,
-                color: Color(0xFF7C3AED),
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'QRIS',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B),
-                    ),
-                  ),
-                  Text(
-                    'Scan kode QRIS untuk membayar',
-                    style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                  ),
-                ],
-              ),
-            ),
-            InkWell(
-              borderRadius: BorderRadius.circular(8),
-              onTap: () => _showQrisImage(context),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+  Widget _buildQrisCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   color: _qrisBg,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: _qrisBorder),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Text(
-                  'Lihat QRIS',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF7C3AED),
+                child: Padding(
+                  padding: const EdgeInsets.all(6),
+                  child: Image.asset(
+                    'assets/icon/payment-method/icon_qris.png',
+                    width: 24,
+                    height: 24,
                   ),
                 ),
               ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'QRIS',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E293B),
+                      ),
+                    ),
+                    Text(
+                      'Scan kode QRIS untuk membayar',
+                      style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _showQrisImage(context),
+              icon: const Icon(Icons.qr_code_scanner_rounded, size: 18),
+              label: const Text(
+                'Lihat QRIS',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                elevation: 0,
+              ),
             ),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -553,117 +712,142 @@ class _BrivaScreenState extends State<BrivaScreen> {
     );
   }
 
-  Widget _buildBankTransferSection(String account, String name) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.account_balance_rounded,
-                color: Color(0xFF2563EB),
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Transfer Bank Mandiri',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B),
-                    ),
-                  ),
-                  Text(
-                    'Transfer ke rekening Bank Mandiri',
-                    style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 14),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+  Widget _buildBankTransferCard() {
+    const bankAccount = '1770025908846';
+    const bankName = 'a.n. Sarastiani Ratna Adianti';
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 1),
           ),
-          child: Column(
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              const Text(
-                'Nomor Rekening',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Color(0xFF64748B),
-                  fontWeight: FontWeight.w500,
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(6),
+                  child: Image.asset(
+                    'assets/icon/payment-method/icon_mandiri.png',
+                    width: 24,
+                    height: 24,
+                  ),
                 ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                account,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
-                  letterSpacing: 2,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                name,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF64748B),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: account));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Nomor rekening berhasil disalin'),
-                        backgroundColor: Color(0xFF0F766E),
-                        behavior: SnackBarBehavior.floating,
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Transfer Bank Mandiri',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E293B),
                       ),
-                    );
-                  },
-                  icon: const Icon(Icons.copy_rounded, size: 18),
-                  label: const Text(
-                    'Salin Nomor Rekening',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
                     ),
-                    elevation: 0,
-                  ),
+                    Text(
+                      'Transfer ke rekening Bank Mandiri',
+                      style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-        ),
-      ],
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Column(
+              children: [
+                const Text(
+                  'Nomor Rekening',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  bankAccount,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1E293B),
+                    letterSpacing: 2,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  bankName,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Clipboard.setData(ClipboardData(text: bankAccount));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Nomor rekening berhasil disalin'),
+                          backgroundColor: Color(0xFF0F766E),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.copy_rounded, size: 18),
+                    label: const Text(
+                      'Salin Nomor Rekening',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -719,9 +903,9 @@ class _BrivaScreenState extends State<BrivaScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.05),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withOpacity(0.15)),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -770,7 +954,7 @@ class _BrivaScreenState extends State<BrivaScreen> {
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
+                backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 48),
                 shape: RoundedRectangleBorder(
@@ -1115,8 +1299,7 @@ class _BrivaScreenState extends State<BrivaScreen> {
             maxLength: 1000,
             maxLines: 2,
             decoration: InputDecoration(
-              hintText:
-                  'Catatan transaksi (opsional)\nContoh: Sudah dibayar via QRIS/Aplikasi Mandiri Online',
+              hintText: 'Catatan transaksi (opsional)',
               hintStyle: const TextStyle(
                 fontSize: 13,
                 color: Color(0xFF94A3B8),

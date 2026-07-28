@@ -78,12 +78,20 @@ class FcmService {
   static bool _tokenSyncScheduled = false;
 
   /// Returns the current device FCM token, if available.
+  /// On failure, tries deleteToken + getToken as a fallback.
   static Future<String?> getToken() async {
     try {
       return await _messaging.getToken();
     } catch (e) {
       debugPrint('[FCM] Failed to get FCM token: $e');
-      return null;
+      try {
+        debugPrint('[FCM] Attempting deleteToken + getToken fallback...');
+        await _messaging.deleteToken();
+        return await _messaging.getToken();
+      } catch (e2) {
+        debugPrint('[FCM] deleteToken + getToken fallback failed: $e2');
+        return null;
+      }
     }
   }
 
@@ -149,19 +157,16 @@ class FcmService {
     await _initLocalNotifications();
 
     // Listen for token refresh — will use the stored _apiService.
-    _messaging.onTokenRefresh.listen((token) {
-      if (_apiService != null) {
-        _sendTokenToServer(_apiService!, token);
+    _messaging.onTokenRefresh.listen((token) async {
+      if (_apiService == null) return;
+      final prefs = await SharedPreferences.getInstance();
+      final authToken = prefs.getString('auth_token');
+      if (authToken == null) {
+        debugPrint('[FCM] Token refresh skipped — no authenticated user.');
+        return;
       }
+      _sendTokenToServer(_apiService!, token);
     });
-
-    // Prefetch token once during startup so it can be available later.
-    try {
-      final initialToken = await _messaging.getToken();
-      debugPrint('[FCM] Initial token after initialize: $initialToken');
-    } catch (e) {
-      debugPrint('[FCM] Failed to prefetch FCM token: $e');
-    }
 
     // Foreground message handler
     FirebaseMessaging.onMessage.listen((message) {
@@ -233,8 +238,18 @@ class FcmService {
     }
 
     if (token == null) {
-      debugPrint('[FCM] syncToken: token still unavailable after wait');
-      _scheduleTokenSyncRetries(retries: 3, delay: const Duration(seconds: 10));
+      debugPrint('[FCM] syncToken: token still unavailable, trying deleteToken + getToken fallback...');
+      try {
+        await _messaging.deleteToken();
+        token = await _messaging.getToken();
+      } catch (e) {
+        debugPrint('[FCM] syncToken: deleteToken + getToken fallback failed: $e');
+      }
+    }
+
+    if (token == null) {
+      debugPrint('[FCM] syncToken: token still unavailable after all fallbacks, scheduling delayed retries');
+      _scheduleTokenSyncRetries();
       return;
     }
 
@@ -265,8 +280,8 @@ class FcmService {
   }
 
   static void _scheduleTokenSyncRetries({
-    required int retries,
-    required Duration delay,
+    int retries = 6,
+    Duration delay = const Duration(seconds: 30),
   }) {
     if (_tokenSyncScheduled) {
       debugPrint(
@@ -278,9 +293,16 @@ class FcmService {
     _tokenSyncScheduled = true;
     Future<void>.delayed(delay, () async {
       try {
-        final token = await _messaging.getToken();
+        String? token;
+        try {
+          await _messaging.deleteToken();
+          token = await _messaging.getToken();
+        } catch (_) {
+          token = await _messaging.getToken();
+        }
+
         if (token != null && _apiService != null) {
-          debugPrint('[FCM] Fallback token retry found token: $token');
+          debugPrint('[FCM] Deferred token sync found token: $token');
           await _sendTokenToServer(_apiService!, token);
           _tokenSyncScheduled = false;
           return;
@@ -288,19 +310,29 @@ class FcmService {
 
         if (retries > 1) {
           debugPrint(
-            '[FCM] Fallback token retry did not find a token, retrying again ($retries remaining)',
+            '[FCM] Deferred retry $retries remaining, retrying...',
           );
           _tokenSyncScheduled = false;
-          _scheduleTokenSyncRetries(retries: retries - 1, delay: delay);
+          _scheduleTokenSyncRetries(
+            retries: retries - 1,
+            delay: Duration(
+              seconds: (delay.inSeconds * 1.5).toInt().clamp(30, 300),
+            ),
+          );
         } else {
-          debugPrint('[FCM] Fallback token retries exhausted');
+          debugPrint('[FCM] Deferred retries exhausted');
           _tokenSyncScheduled = false;
         }
       } catch (e) {
-        debugPrint('[FCM] Fallback token retry failed: $e');
+        debugPrint('[FCM] Deferred retry failed: $e');
         if (retries > 1) {
           _tokenSyncScheduled = false;
-          _scheduleTokenSyncRetries(retries: retries - 1, delay: delay);
+          _scheduleTokenSyncRetries(
+            retries: retries - 1,
+            delay: Duration(
+              seconds: (delay.inSeconds * 1.5).toInt().clamp(30, 300),
+            ),
+          );
         } else {
           _tokenSyncScheduled = false;
         }

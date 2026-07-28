@@ -15,11 +15,13 @@ class AuthProvider extends ChangeNotifier {
 
   AuthStatus _status = AuthStatus.initial;
   UserModel? _user;
+  String? _ispId;
   String? _error;
   String? _loadingMessage;
 
   AuthStatus get status => _status;
   UserModel? get user => _user;
+  String? get ispId => _ispId;
   String? get error => _error;
   String? get loadingMessage => _loadingMessage;
   bool get isAuthenticated => _status == AuthStatus.authenticated;
@@ -36,6 +38,15 @@ class AuthProvider extends ChangeNotifier {
         _status = AuthStatus.unauthenticated;
         notifyListeners();
         return;
+      }
+      final ispId = await _storage.getIspId();
+      if (ispId != null) {
+        _ispId = ispId;
+        final isp = ApiConstants.ispList.firstWhere(
+          (e) => e['id'] == ispId,
+          orElse: () => ApiConstants.ispList[0],
+        );
+        ApiConstants.baseUrl = isp['baseUrl']!;
       }
       final res = await _api.get(ApiConstants.me);
       final userData = (res is Map && res.containsKey('user'))
@@ -112,9 +123,7 @@ class AuthProvider extends ChangeNotifier {
             auth: false,
           );
           final token = res['token']?.toString() ?? '';
-          final user = UserModel.fromJson(
-            res['user'] as Map<String, dynamic>,
-          );
+          final user = UserModel.fromJson(res['user'] as Map<String, dynamic>);
           final role = user.role.toLowerCase().trim();
           if (role != 'customer') {
             _error =
@@ -127,6 +136,7 @@ class AuthProvider extends ChangeNotifier {
           }
           await _storage.saveToken(token);
           await _storage.saveIspId(isp['id']!);
+          _ispId = isp['id']!;
           _user = user;
           await _storage.saveRole(role);
           _status = AuthStatus.authenticated;
@@ -168,8 +178,7 @@ class AuthProvider extends ChangeNotifier {
     final now = DateTime.now();
     final cutoff24h = now.subtract(const Duration(hours: 24));
     final history = _otpRequestLog[phone] ?? [];
-    _otpRequestLog[phone] =
-        history.where((t) => t.isAfter(cutoff24h)).toList();
+    _otpRequestLog[phone] = history.where((t) => t.isAfter(cutoff24h)).toList();
 
     // Maksimal 3x request per 24 jam (Fonnte anti-ban)
     if (_otpRequestLog[phone]!.length >= 3) {
@@ -245,11 +254,9 @@ class AuthProvider extends ChangeNotifier {
 
   Future<({bool registered, String? message})> checkPhone(String phone) async {
     try {
-      final res = await _api.post(
-        ApiConstants.checkPhone,
-        {'phone': phone},
-        auth: false,
-      );
+      final res = await _api.post(ApiConstants.checkPhone, {
+        'phone': phone,
+      }, auth: false);
       final registered = res['registered'] == true;
       return (registered: registered, message: null);
     } on ApiException catch (e) {
@@ -283,9 +290,7 @@ class AuthProvider extends ChangeNotifier {
             auth: false,
           );
           final token = res['token']?.toString() ?? '';
-          final user = UserModel.fromJson(
-            res['user'] as Map<String, dynamic>,
-          );
+          final user = UserModel.fromJson(res['user'] as Map<String, dynamic>);
           final role = user.role.toLowerCase().trim();
           if (role != 'customer') {
             _error =
@@ -298,6 +303,7 @@ class AuthProvider extends ChangeNotifier {
           }
           await _storage.saveToken(token);
           await _storage.saveIspId(isp['id']!);
+          _ispId = isp['id']!;
           _user = user;
           await _storage.saveRole(role);
           _status = AuthStatus.authenticated;
@@ -341,6 +347,7 @@ class AuthProvider extends ChangeNotifier {
     } catch (_) {}
     await _storage.clearAll();
     _user = null;
+    _ispId = null;
     _error = null;
     _loadingMessage = null;
     _status = AuthStatus.unauthenticated;

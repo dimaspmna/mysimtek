@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/providers/auth_provider.dart';
 import '../../providers/billing_provider.dart';
 import 'billing_screen.dart';
 import 'briva_screen.dart';
@@ -30,8 +31,25 @@ class _PaymentMethodSelectionScreenState
         .activeBilling
         ?.customerPayment;
 
-    final bool isBrivaCustomer = customerPayment?.isBriva ?? false;
-    final bool isMidtransCustomer = customerPayment?.isMidtrans ?? false;
+    final isMidtransCustomer = customerPayment?.isMidtrans ?? false;
+    final isBrivaCustomer = customerPayment?.isBriva ?? false;
+    final isWimanetCustomer = customerPayment?.isWimanet ?? false;
+
+    final bool showMidtrans;
+    final bool showBriva;
+    final bool showWimanet;
+
+    if (isMidtransCustomer || isBrivaCustomer || isWimanetCustomer) {
+      showMidtrans = isMidtransCustomer;
+      showBriva = isBrivaCustomer;
+      showWimanet = isWimanetCustomer;
+    } else {
+      final ispId = context.read<AuthProvider>().ispId;
+      final isWimanetIsp = ispId == 'wimanet';
+      showMidtrans = !isWimanetIsp;
+      showBriva = false;
+      showWimanet = isWimanetIsp;
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -55,12 +73,11 @@ class _PaymentMethodSelectionScreenState
             style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
           ),
           const SizedBox(height: 16),
-          if (!isBrivaCustomer)
+          if (showMidtrans)
             _PaymentMethodCard(
               imageAsset: 'assets/icon/payment-method/icon_midtrans.png',
               title: 'Midtrans',
               subtitle: 'Bayar via Virtual Account, GoPay, QRIS, dan lainnya',
-              disabled: false,
               onTap: () {
                 Navigator.push(
                   context,
@@ -68,33 +85,30 @@ class _PaymentMethodSelectionScreenState
                 );
               },
             ),
-          if (isBrivaCustomer || !isMidtransCustomer) ...[
-            if (isBrivaCustomer) const SizedBox(height: 12),
+          if (showBriva)
             _PaymentMethodCard(
-              imageAsset: 'assets/icon/payment-method/icon_wimanet.png',
-              title: 'Online (QRIS / Transfer Bank Mandiri)',
-              subtitle: isBrivaCustomer
-                  ? 'Scan QRIS atau Transfer ke Bank Mandiri'
-                  : 'Bayar melalui BRI Virtual Account (BRIVA)',
-              disabled: isBrivaCustomer ? false : isMidtransCustomer,
+              imageAsset: 'assets/icon/payment-method/icon_briva.png',
+              title: 'BRI Virtual Account (BRIVA)',
+              subtitle: 'Bayar melalui BRI Virtual Account',
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const BrivaScreen()),
                 );
               },
-              onDisabledTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Hanya bisa pembayaran melalui Midtrans saja',
-                    ),
-                    behavior: SnackBarBehavior.floating,
-                  ),
+            ),
+          if (showWimanet)
+            _PaymentMethodCard(
+              imageAsset: 'assets/icon/payment-method/icon_qris.png',
+              title: 'QRIS / Transfer Bank Mandiri',
+              subtitle: 'Scan QRIS atau Transfer ke Bank Mandiri',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const BrivaScreen()),
                 );
               },
             ),
-          ],
         ],
       ),
     );
@@ -106,77 +120,70 @@ class _PaymentMethodCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback onTap;
-  final bool disabled;
-  final VoidCallback? onDisabledTap;
 
   const _PaymentMethodCard({
     required this.imageAsset,
     required this.title,
     required this.subtitle,
     required this.onTap,
-    this.disabled = false,
-    this.onDisabledTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: disabled ? onDisabledTap : onTap,
+      onTap: onTap,
       borderRadius: BorderRadius.circular(16),
-      child: Opacity(
-        opacity: disabled ? 0.4 : 1.0,
-        child: Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 1),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.asset(
+                imageAsset,
+                width: 56,
+                height: 56,
+                fit: BoxFit.contain,
               ),
-            ],
-          ),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  imageAsset,
-                  width: 56,
-                  height: 56,
-                  fit: BoxFit.contain,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B),
-                      ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E293B),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF64748B),
-                      ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF64748B),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8)),
-            ],
-          ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8)),
+          ],
         ),
       ),
     );
