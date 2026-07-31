@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/providers/app_update_provider.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/connectivity_provider.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/app_update_bottom_sheet.dart';
 import '../providers/customer_dashboard_provider.dart';
@@ -154,6 +155,15 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
             return const _DashboardSkeleton();
           }
           if (provider.state == LoadState.error) {
+            final isOffline =
+                context.read<ConnectivityProvider>().isOffline;
+            if (isOffline) {
+              return _buildDashboardBody(
+                context,
+                CustomerDashboard.empty,
+                provider,
+              );
+            }
             return AppErrorView(
               message: provider.error ?? 'Gagal memuat data',
               onRetry: provider.load,
@@ -168,45 +178,53 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) _checkAndShowUpdate();
           });
-          return RefreshIndicator(
-            color: AppColors.primary,
-            onRefresh: provider.load,
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-              children: [
-                _HeroCard(dashboard: d),
-                const SizedBox(height: 16),
-                _StatisticsSection(
-                  unpaidInvoices: d.unpaidInvoices,
-                  openComplaints: context
-                      .watch<TicketProvider>()
-                      .tickets
-                      .where(
-                        (t) => t.status == 'open' || t.status == 'in_progress',
-                      )
-                      .length,
-                  onTagihanTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const PaymentMethodSelectionScreen(),
-                    ),
-                  ),
-                  onKomplainTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LaporScreen()),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _QuickMenu(),
-                const SizedBox(height: 20),
-                if (d.banners.isNotEmpty) ...[
-                  _BannerSection(banners: d.banners),
-                  const SizedBox(height: 16),
-                ],
-              ],
-            ),
-          );
+          return _buildDashboardBody(context, d, provider);
         },
+      ),
+    );
+  }
+
+  Widget _buildDashboardBody(
+    BuildContext context,
+    CustomerDashboard d,
+    CustomerDashboardProvider provider,
+  ) {
+    return RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: provider.load,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        children: [
+          _HeroCard(dashboard: d),
+          const SizedBox(height: 16),
+          _StatisticsSection(
+            unpaidInvoices: d.unpaidInvoices,
+            openComplaints: context
+                .watch<TicketProvider>()
+                .tickets
+                .where(
+                  (t) => t.status == 'open' || t.status == 'in_progress',
+                )
+                .length,
+            onTagihanTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const PaymentMethodSelectionScreen(),
+              ),
+            ),
+            onKomplainTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const LaporScreen()),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _QuickMenu(),
+          const SizedBox(height: 20),
+          if (d.banners.isNotEmpty) ...[
+            _BannerSection(banners: d.banners),
+            const SizedBox(height: 16),
+          ],
+        ],
       ),
     );
   }

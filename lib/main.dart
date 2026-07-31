@@ -11,6 +11,7 @@ import 'core/services/api_service.dart';
 import 'core/services/storage_service.dart';
 import 'core/services/fcm_service.dart';
 import 'core/providers/auth_provider.dart';
+import 'core/providers/connectivity_provider.dart';
 import 'features/customer/providers/customer_dashboard_provider.dart';
 import 'features/customer/providers/billing_provider.dart';
 import 'features/customer/providers/ticket_provider.dart';
@@ -65,6 +66,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => NotificationProvider(apiService)),
         ChangeNotifierProvider(create: (_) => OtaAccessProvider(apiService)),
         ChangeNotifierProvider(create: (_) => AppUpdateProvider(apiService)),
+        ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
       ],
       child: const OfaApp(),
     ),

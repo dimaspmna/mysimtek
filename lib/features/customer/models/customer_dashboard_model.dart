@@ -162,6 +162,14 @@ class CustomerDashboard {
     );
   }
 
+  static const CustomerDashboard empty = CustomerDashboard(
+    serviceStatus: 'aktif',
+    packageName: '-',
+    customerName: '',
+    tagihan: '-',
+    jatuhTempo: '-',
+  );
+
   static int _toInt(dynamic v) {
     if (v == null) return 0;
     if (v is int) return v;

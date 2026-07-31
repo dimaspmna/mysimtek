@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/providers/connectivity_provider.dart';
 import '../../../core/services/fcm_service.dart';
 import '../../customer/providers/billing_provider.dart';
 import '../../customer/providers/complaint_provider.dart';
@@ -31,6 +32,7 @@ class _CustomerShellState extends State<CustomerShell>
 
   StreamSubscription? _fcmTapSub;
   StreamSubscription? _fcmMessageSub;
+  StreamSubscription<void>? _connectivitySub;
 
   final _screens = const [CustomerDashboardScreen(), CustomerProfileScreen()];
 
@@ -41,6 +43,7 @@ class _CustomerShellState extends State<CustomerShell>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _listenFcmMessages();
       _listenFcmTap();
+      _listenConnectivity();
     });
   }
 
@@ -90,6 +93,14 @@ class _CustomerShellState extends State<CustomerShell>
       } else {
         _refreshAll();
       }
+    });
+  }
+
+  void _listenConnectivity() {
+    _connectivitySub =
+        context.read<ConnectivityProvider>().onConnectionRestored.listen((_) {
+      if (!mounted) return;
+      _refreshAll();
     });
   }
 
@@ -268,6 +279,7 @@ class _CustomerShellState extends State<CustomerShell>
     WidgetsBinding.instance.removeObserver(this);
     _fcmTapSub?.cancel();
     _fcmMessageSub?.cancel();
+    _connectivitySub?.cancel();
     super.dispose();
   }
 
